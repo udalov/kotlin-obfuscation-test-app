@@ -1,0 +1,31 @@
+plugins {
+    id "java"
+    id "org.jetbrains.kotlin.jvm" version "1.2.41"
+    id "com.github.johnrengelman.shadow" version "2.0.4"
+}
+
+group "org.udalov"
+version "1.0-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib:1.2.41"
+    compile "org.jetbrains.kotlin:kotlin-reflect:1.2.41"
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "src"
+        }
+    }
+}
+
+jar {
+    manifest {
+        attributes "Main-Class": "Main"
+    }
+}
