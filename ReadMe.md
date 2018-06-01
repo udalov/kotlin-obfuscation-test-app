@@ -4,7 +4,7 @@ This project provides an example application that uses Kotlin reflection, which 
 
 At the moment, this project consists of the majority of tests on reflection [from the main Kotlin repo](https://github.com/JetBrains/kotlin/tree/master/compiler/testData/codegen/box/reflection). Run with:
 
-    ./gradlew build
+    ./gradlew clean build
     java -jar build/libs/kotlin-obfuscation-test-app-1.0-SNAPSHOT-all.jar
 
 (substitute `./gradlew` with `gradlew` on Windows)

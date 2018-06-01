@@ -31,6 +31,14 @@ jar {
     }
 }
 
+shadowJar {
+    dependencies {
+        exclude(dependency("org.jetbrains.kotlin:kotlin-stdlib-common"))
+        exclude(dependency("org.jetbrains.kotlin:kotlin-test-common"))
+    }
+    exclude "org/intellij/lang/annotations/*.class"
+}
+
 assemble {
     dependsOn shadowJar
 }
