@@ -33,6 +33,7 @@ val ignored = listOf(
     "properties/getDelegate/nameClashExtensionProperties.kt",
     "properties/genericProperty.kt",
     "properties/genericOverriddenProperty.kt",
+    "properties/localDelegated/localAndNonLocal.kt", // Enable after migration to 1.2.60+
     "specialBuiltIns/getMembersOfStandardJavaClasses.kt",
     "enclosing/",
     "genericSignature/",
