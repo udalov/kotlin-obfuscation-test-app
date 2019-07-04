@@ -46,7 +46,7 @@ fun box(): String {
     for (primitive in listOf(Byte::class, Double::class, Float::class, Int::class, Long::class, Short::class, Char::class)) {
         assertEquals(listOf("Companion"), nestedNames(primitive))
     }
-    assertEquals(emptyList<String>(), nestedNames(Boolean::class))
+    assertEquals(listOf("Companion"), nestedNames(Boolean::class))
 
     // Primitive arrays
     for (primitiveArray in listOf(
