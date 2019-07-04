@@ -1,6 +1,8 @@
 object Main {
     @JvmStatic
     fun main(args: Array<String>) {
+        System.setErr(System.out)
+
         runTests()
 
         println("$passed/${passed + failed} tests passed")

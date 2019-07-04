@@ -1,5 +1,6 @@
 plugins {
     id "java"
+    id "application"
     id "org.jetbrains.kotlin.jvm" version "1.5.0"
     id "com.github.johnrengelman.shadow" version "7.0.0"
 }
@@ -13,8 +14,9 @@ repositories {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
-    implementation "org.jetbrains.kotlin:kotlin-reflect"
     implementation "org.jetbrains.kotlin:kotlin-test"
+
+    implementation project(":new-reflect")
 }
 
 sourceSets {
@@ -48,3 +50,5 @@ compileKotlin {
         freeCompilerArgs += ["-Xopt-in=kotlin.ExperimentalStdlibApi"]
     }
 }
+
+mainClassName = "Main"

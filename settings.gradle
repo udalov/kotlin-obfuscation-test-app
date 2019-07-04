@@ -1,2 +1,3 @@
 rootProject.name = 'kotlin-obfuscation-test-app'
 
+include 'new-reflect'
