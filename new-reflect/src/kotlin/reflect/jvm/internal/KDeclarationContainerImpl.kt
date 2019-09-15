@@ -16,27 +16,18 @@
 
 package kotlin.reflect.jvm.internal
 
+import org.jetbrains.kotlin.builtins.JvmAbi
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.runtime.components.RuntimeModuleData
-import org.jetbrains.kotlin.descriptors.runtime.components.tryLoadClass
-import org.jetbrains.kotlin.descriptors.runtime.structure.safeClassLoader
-import org.jetbrains.kotlin.descriptors.runtime.structure.wrapperByPrimitive
-import org.jetbrains.kotlin.load.java.JvmAbi
+import org.jetbrains.kotlin.misc.createArrayType
+import org.jetbrains.kotlin.misc.safeClassLoader
+import org.jetbrains.kotlin.misc.tryLoadClass
+import org.jetbrains.kotlin.misc.wrapperByPrimitive
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.renderer.DescriptorRenderer
-import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import java.lang.reflect.Constructor
 import java.lang.reflect.Method
 import kotlin.jvm.internal.ClassBasedDeclarationContainer
 
 internal abstract class KDeclarationContainerImpl : ClassBasedDeclarationContainer {
-    abstract inner class Data {
-        // This is stored here on a soft reference to prevent GC from destroying the weak reference to it in the moduleByClassLoader cache
-        val moduleData: RuntimeModuleData by ReflectProperties.lazySoft {
-            jClass.getOrCreateModule()
-        }
-    }
-
     protected open val methodOwner: Class<*>
         get() = jClass.wrapperByPrimitive ?: jClass
 
@@ -49,15 +40,10 @@ internal abstract class KDeclarationContainerImpl : ClassBasedDeclarationContain
     abstract fun getLocalProperty(index: Int): PropertyDescriptor?
 
     protected fun getMembers(scope: MemberScope, belonginess: MemberBelonginess): Collection<KCallableImpl<*>> {
-        val visitor = object : CreateKCallableVisitor(this) {
-            override fun visitConstructorDescriptor(descriptor: ConstructorDescriptor, data: Unit): KCallableImpl<*> =
-                throw IllegalStateException("No constructors should appear here: $descriptor")
-        }
         return scope.getContributedDescriptors().mapNotNull { descriptor ->
-            if (descriptor is CallableMemberDescriptor &&
-                descriptor.visibility != DescriptorVisibilities.INVISIBLE_FAKE &&
-                belonginess.accept(descriptor)
-            ) descriptor.accept(visitor, Unit) else null
+            if (descriptor !is CallableMemberDescriptor || !belonginess.accept(descriptor)) return@mapNotNull null
+
+            createKCallable(descriptor, this)
         }.toList()
     }
 
@@ -66,7 +52,7 @@ internal abstract class KDeclarationContainerImpl : ClassBasedDeclarationContain
         INHERITED;
 
         fun accept(member: CallableMemberDescriptor): Boolean =
-            member.kind.isReal == (this == DECLARED)
+            member.isReal == (this == DECLARED)
     }
 
     fun findPropertyDescriptor(name: String, signature: String): PropertyDescriptor {
@@ -77,7 +63,7 @@ internal abstract class KDeclarationContainerImpl : ClassBasedDeclarationContain
                     ?: throw KotlinReflectionInternalError("Local property #$number not found in $jClass")
         }
 
-        val properties = getProperties(Name.identifier(name))
+        val properties = getProperties(name)
             .filter { descriptor ->
                 RuntimeTypeMapper.mapPropertySignature(descriptor).asString() == signature
             }
@@ -106,8 +92,8 @@ internal abstract class KDeclarationContainerImpl : ClassBasedDeclarationContain
                 return mostVisibleProperties.first()
             }
 
-            val allMembers = getProperties(Name.identifier(name)).joinToString("\n") { descriptor ->
-                DescriptorRenderer.DEBUG_TEXT.render(descriptor) + " | " + RuntimeTypeMapper.mapPropertySignature(descriptor).asString()
+            val allMembers = getProperties(name).joinToString("\n") { descriptor ->
+                descriptor.render() + " | " + RuntimeTypeMapper.mapPropertySignature(descriptor).asString()
             }
             throw KotlinReflectionInternalError(
                 "Property '$name' (JVM signature: $signature) not resolved in $this:" +
@@ -119,14 +105,14 @@ internal abstract class KDeclarationContainerImpl : ClassBasedDeclarationContain
     }
 
     fun findFunctionDescriptor(name: String, signature: String): FunctionDescriptor {
-        val members = if (name == "<init>") constructorDescriptors.toList() else getFunctions(Name.identifier(name))
+        val members = if (name == "<init>") constructorDescriptors.toList() else getFunctions(name)
         val functions = members.filter { descriptor ->
             RuntimeTypeMapper.mapSignature(descriptor).asString() == signature
         }
 
         if (functions.size != 1) {
             val allMembers = members.joinToString("\n") { descriptor ->
-                DescriptorRenderer.DEBUG_TEXT.render(descriptor) + " | " + RuntimeTypeMapper.mapSignature(descriptor).asString()
+                descriptor.render() + " | " + RuntimeTypeMapper.mapSignature(descriptor).asString()
             }
             throw KotlinReflectionInternalError(
                 "Function '$name' (JVM signature: $signature) not resolved in $this:" +

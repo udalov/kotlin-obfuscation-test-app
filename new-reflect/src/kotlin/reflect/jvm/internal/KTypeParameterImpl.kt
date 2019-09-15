@@ -16,14 +16,9 @@
 
 package kotlin.reflect.jvm.internal
 
-import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.descriptors.runtime.components.ReflectKotlinClass
-import org.jetbrains.kotlin.load.kotlin.JvmPackagePartSource
-import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedMemberDescriptor
+import org.jetbrains.kotlin.name.asString
 import org.jetbrains.kotlin.types.Variance
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import kotlin.jvm.internal.TypeParameterReference
 import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
@@ -49,6 +44,7 @@ internal class KTypeParameterImpl(
         get() = descriptor.isReified
 
     private val container: KTypeParameterOwnerImpl = container ?: run {
+        /*
         when (val declaration = descriptor.containingDeclaration) {
             is ClassDescriptor -> {
                 declaration.toKClassImpl()
@@ -64,12 +60,15 @@ internal class KTypeParameterImpl(
                         deserializedMember.getContainerClass().kotlin as KClassImpl<*>
                     }
                 }
-                declaration.accept(CreateKCallableVisitor(callableContainerClass), Unit)
+                createKCallable(declaration, callableContainerClass)
             }
             else -> throw KotlinReflectionInternalError("Unknown type parameter container: $declaration")
         }
+        */
+        TODO()
     }
 
+/*
     private fun ClassDescriptor.toKClassImpl(): KClassImpl<*> =
         toJavaClass()?.kotlin as KClassImpl<*>?
             ?: throw KotlinReflectionInternalError("Type parameter container is not resolved: $containingDeclaration")
@@ -77,6 +76,7 @@ internal class KTypeParameterImpl(
     private fun DeserializedMemberDescriptor.getContainerClass(): Class<*> =
         containerSource.safeAs<JvmPackagePartSource>()?.knownJvmBinaryClass.safeAs<ReflectKotlinClass>()?.klass
             ?: throw KotlinReflectionInternalError("Container of deserialized member is not resolved: $this")
+*/
 
     override fun equals(other: Any?) =
         other is KTypeParameterImpl && container == other.container && name == other.name

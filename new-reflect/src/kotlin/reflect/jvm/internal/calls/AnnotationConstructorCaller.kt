@@ -5,12 +5,12 @@
 
 package kotlin.reflect.jvm.internal.calls
 
+import org.jetbrains.kotlin.misc.wrapperByPrimitive
 import java.lang.reflect.Proxy
 import java.lang.reflect.Type
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.internal.KotlinReflectionInternalError
-import org.jetbrains.kotlin.descriptors.runtime.structure.wrapperByPrimitive
 import java.lang.reflect.Method as ReflectMethod
 
 internal class AnnotationConstructorCaller(

@@ -16,42 +16,29 @@
 
 package kotlin.reflect.jvm.internal
 
-import org.jetbrains.kotlin.builtins.CompanionObjectMapping
+import org.jetbrains.kotlin.builtins.JvmAbi
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
-import org.jetbrains.kotlin.builtins.isMappedIntrinsicCompanionObject
+import org.jetbrains.kotlin.builtins.KotlinBuiltInsImpl
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-import org.jetbrains.kotlin.load.java.JvmAbi
-import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
-import org.jetbrains.kotlin.metadata.deserialization.getExtensionOrNull
-import org.jetbrains.kotlin.metadata.jvm.JvmProtoBuf
+import org.jetbrains.kotlin.misc.CompanionObjectMapping
+import org.jetbrains.kotlin.misc.compact
+import org.jetbrains.kotlin.misc.functionClassArity
+import org.jetbrains.kotlin.misc.wrapperByPrimitive
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
-import org.jetbrains.kotlin.resolve.scopes.MemberScope
-import org.jetbrains.kotlin.serialization.deserialization.MemberDeserializer
-import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
-import org.jetbrains.kotlin.utils.compact
+import org.jetbrains.kotlin.name.asString
 import kotlin.jvm.internal.TypeIntrinsics
 import kotlin.reflect.*
 import kotlin.reflect.jvm.internal.KDeclarationContainerImpl.MemberBelonginess.DECLARED
 import kotlin.reflect.jvm.internal.KDeclarationContainerImpl.MemberBelonginess.INHERITED
-import org.jetbrains.kotlin.descriptors.runtime.components.ReflectKotlinClass
-import org.jetbrains.kotlin.descriptors.runtime.structure.functionClassArity
-import org.jetbrains.kotlin.descriptors.runtime.structure.wrapperByPrimitive
 
 internal class KClassImpl<T : Any>(
     override val jClass: Class<T>
 ) : KDeclarationContainerImpl(), KClass<T>, KClassifierImpl, KTypeParameterOwnerImpl {
-    inner class Data : KDeclarationContainerImpl.Data() {
+    inner class Data {
         val descriptor: ClassDescriptor by ReflectProperties.lazySoft {
-            val classId = classId
-            val moduleData = data().moduleData
-
             val descriptor =
-                if (classId.isLocal) moduleData.deserialization.deserializeClass(classId)
-                else moduleData.module.findClassAcrossModuleDependencies(classId)
+                TODO()
 
             descriptor ?: reportUnresolvedClass()
         }
@@ -97,11 +84,9 @@ internal class KClassImpl<T : Any>(
         }
 
         val nestedClasses: Collection<KClass<*>> by ReflectProperties.lazySoft {
-            descriptor.unsubstitutedInnerClassesScope.getContributedDescriptors().filterNot(DescriptorUtils::isEnumEntry)
-                .mapNotNull { nestedClass ->
-                    val jClass = (nestedClass as ClassDescriptor).toJavaClass()
-                    jClass?.let { KClassImpl(it) }
-                }
+            descriptor.nestedClasses.mapNotNull { nestedClass ->
+                nestedClass.toJavaClass()?.let { KClassImpl(it) }
+            }
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -122,11 +107,11 @@ internal class KClassImpl<T : Any>(
         }
 
         val supertypes: List<KType> by ReflectProperties.lazySoft {
-            val kotlinTypes = descriptor.typeConstructor.supertypes
+            val kotlinTypes = descriptor.supertypes
             val result = ArrayList<KTypeImpl>(kotlinTypes.size)
             kotlinTypes.mapTo(result) { kotlinType ->
                 KTypeImpl(kotlinType) {
-                    val superClass = kotlinType.constructor.declarationDescriptor
+                    val superClass = kotlinType.descriptor
                     if (superClass !is ClassDescriptor) throw KotlinReflectionInternalError("Supertype not a class: $superClass")
 
                     val superJavaClass = superClass.toJavaClass()
@@ -142,10 +127,10 @@ internal class KClassImpl<T : Any>(
                 }
             }
             if (!KotlinBuiltIns.isSpecialClassWithNoSupertypes(descriptor) && result.all {
-                val classKind = DescriptorUtils.getClassDescriptorForType(it.type).kind
+                val classKind = (it.type.descriptor as ClassDescriptor).kind
                 classKind == ClassKind.INTERFACE || classKind == ClassKind.ANNOTATION_CLASS
             }) {
-                result += KTypeImpl(descriptor.builtIns.anyType) { Any::class.java }
+                result += KTypeImpl(KotlinBuiltInsImpl.anyType) { Any::class.java }
             }
             result.compact()
         }
@@ -153,7 +138,7 @@ internal class KClassImpl<T : Any>(
         val sealedSubclasses: List<KClass<out T>> by ReflectProperties.lazySoft {
             descriptor.sealedSubclasses.mapNotNull { subclass ->
                 @Suppress("UNCHECKED_CAST")
-                val jClass = (subclass as ClassDescriptor).toJavaClass() as Class<out T>?
+                val jClass = subclass.toJavaClass() as Class<out T>?
                 jClass?.let { KClassImpl(it) }
             }
         }
@@ -188,7 +173,7 @@ internal class KClassImpl<T : Any>(
     // Note that we load members from the container's default type, which might be confusing. For example, a function declared in a
     // generic class "A<T>" would have "A<T>" as the receiver parameter even if a concrete type like "A<String>" was specified
     // in the function reference. Another, maybe slightly less confusing, approach would be to use the star-projected type ("A<*>").
-    internal val memberScope: MemberScope get() = descriptor.defaultType.memberScope
+    internal val memberScope: MemberScope get() = descriptor.memberScope
 
     internal val staticScope: MemberScope get() = descriptor.staticScope
 
@@ -204,12 +189,12 @@ internal class KClassImpl<T : Any>(
         }
 
     override fun getProperties(name: Name): Collection<PropertyDescriptor> =
-        (memberScope.getContributedVariables(name, NoLookupLocation.FROM_REFLECTION) +
-                staticScope.getContributedVariables(name, NoLookupLocation.FROM_REFLECTION))
+        (memberScope.getContributedVariables(name) +
+                staticScope.getContributedVariables(name))
 
     override fun getFunctions(name: Name): Collection<FunctionDescriptor> =
-        memberScope.getContributedFunctions(name, NoLookupLocation.FROM_REFLECTION) +
-                staticScope.getContributedFunctions(name, NoLookupLocation.FROM_REFLECTION)
+        memberScope.getContributedFunctions(name) +
+                staticScope.getContributedFunctions(name)
 
     override fun getLocalProperty(index: Int): PropertyDescriptor? {
         // TODO: also check that this is a synthetic class (Metadata.k == 3)
@@ -221,6 +206,7 @@ internal class KClassImpl<T : Any>(
             }
         }
 
+/*
         return (descriptor as? DeserializedClassDescriptor)?.let { descriptor ->
             descriptor.classProto.getExtensionOrNull(JvmProtoBuf.classLocalVariable, index)?.let { proto ->
                 deserializeToDescriptor(
@@ -229,6 +215,8 @@ internal class KClassImpl<T : Any>(
                 )
             }
         }
+*/
+        return null
     }
 
     override val simpleName: String? get() = data().simpleName
@@ -287,7 +275,7 @@ internal class KClassImpl<T : Any>(
 
     @Suppress("NOTHING_TO_OVERRIDE") // Temporary workaround for the JPS build until bootstrap
     override val isValue: Boolean
-        get() = descriptor.isValue
+        get() = descriptor.isInline
 
     override fun equals(other: Any?): Boolean =
         other is KClassImpl<*> && javaObjectType == other.javaObjectType
@@ -305,6 +293,7 @@ internal class KClassImpl<T : Any>(
     }
 
     private fun reportUnresolvedClass(): Nothing {
+/*
         val kind = ReflectKotlinClass.create(jClass)?.classHeader?.kind
         when (kind) {
             KotlinClassHeader.Kind.FILE_FACADE, KotlinClassHeader.Kind.MULTIFILE_CLASS, KotlinClassHeader.Kind.MULTIFILE_CLASS_PART -> {
@@ -329,5 +318,7 @@ internal class KClassImpl<T : Any>(
                 throw KotlinReflectionInternalError("Unresolved class: $jClass")
             }
         }
+*/
+        TODO()
     }
 }

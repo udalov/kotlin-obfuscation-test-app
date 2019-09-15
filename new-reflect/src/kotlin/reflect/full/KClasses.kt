@@ -20,9 +20,6 @@
 package kotlin.reflect.full
 
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.types.TypeSubstitutor
-import org.jetbrains.kotlin.types.Variance
-import org.jetbrains.kotlin.utils.DFS
 import kotlin.reflect.*
 import kotlin.reflect.jvm.internal.KCallableImpl
 import kotlin.reflect.jvm.internal.KClassImpl
@@ -190,7 +187,9 @@ val KClass<*>.superclasses: List<KClass<*>>
  */
 @SinceKotlin("1.1")
 val KClass<*>.allSupertypes: Collection<KType>
-    get() = DFS.dfs(
+    get() =
+/*
+        DFS.dfs(
             supertypes,
             DFS.Neighbors { current ->
                 val klass = current.classifier as? KClass<*> ?: throw KotlinReflectionInternalError("Supertype not a class: $current")
@@ -212,7 +211,10 @@ val KClass<*>.allSupertypes: Collection<KType>
                     return true
                 }
             }
-    )
+        )
+*/
+        // TODO
+        emptyList()
 
 /**
  * All superclasses of this class, including indirect ones, in no particular order.
@@ -230,8 +232,8 @@ val KClass<*>.allSuperclasses: Collection<KClass<*>>
  */
 @SinceKotlin("1.1")
 fun KClass<*>.isSubclassOf(base: KClass<*>): Boolean =
-        this == base ||
-        DFS.ifAny(listOf(this), KClass<*>::superclasses) { it == base }
+    // TODO
+        this == base /* || DFS.ifAny(listOf(this), KClass<*>::superclasses) { it == base } */
 
 /**
  * Returns `true` if `this` class is the same or is a (possibly indirect) superclass of [derived], `false` otherwise.

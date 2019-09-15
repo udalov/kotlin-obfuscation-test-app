@@ -18,18 +18,15 @@
 
 package kotlin.reflect.jvm
 
-import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
 import java.lang.reflect.*
 import kotlin.reflect.*
 import kotlin.reflect.javaType as stdlibJavaType
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.functions
 import kotlin.reflect.full.memberProperties
-import kotlin.reflect.jvm.internal.KPackageImpl
 import kotlin.reflect.jvm.internal.KTypeImpl
 import kotlin.reflect.jvm.internal.asKCallableImpl
 import kotlin.reflect.jvm.internal.asKPropertyImpl
-import org.jetbrains.kotlin.descriptors.runtime.components.ReflectKotlinClass
 
 // Kotlin reflection -> Java reflection
 
@@ -104,11 +101,7 @@ val Field.kotlinProperty: KProperty<*>?
 
 
 private fun Member.getKPackage(): KDeclarationContainer? =
-    when (ReflectKotlinClass.create(declaringClass)?.classHeader?.kind) {
-        KotlinClassHeader.Kind.FILE_FACADE, KotlinClassHeader.Kind.MULTIFILE_CLASS, KotlinClassHeader.Kind.MULTIFILE_CLASS_PART ->
-            KPackageImpl(declaringClass)
-        else -> null
-    }
+    TODO()
 
 /**
  * Returns a [KFunction] instance corresponding to the given Java [Method] instance,

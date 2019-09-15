@@ -16,16 +16,17 @@
 
 package kotlin.reflect.jvm.internal
 
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
-import org.jetbrains.kotlin.renderer.DescriptorRenderer
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.KotlinType
 import kotlin.reflect.KParameter
 
 internal object ReflectionObjectRenderer {
-    private val renderer = DescriptorRenderer.FQ_NAMES_IN_TYPES
+    // TODO
+    // private val renderer = DescriptorRenderer.FQ_NAMES_IN_TYPES
 
     private fun StringBuilder.appendReceiverType(receiver: ReceiverParameterDescriptor?) {
         if (receiver != null) {
@@ -34,7 +35,7 @@ internal object ReflectionObjectRenderer {
         }
     }
 
-    private fun StringBuilder.appendReceivers(callable: CallableDescriptor) {
+    private fun StringBuilder.appendReceivers(callable: CallableMemberDescriptor) {
         val dispatchReceiver = callable.instanceReceiverParameter
         val extensionReceiver = callable.extensionReceiverParameter
 
@@ -46,7 +47,7 @@ internal object ReflectionObjectRenderer {
         if (addParentheses) append(")")
     }
 
-    private fun renderCallable(descriptor: CallableDescriptor): String {
+    private fun renderCallable(descriptor: CallableMemberDescriptor): String {
         return when (descriptor) {
             is PropertyDescriptor -> renderProperty(descriptor)
             is FunctionDescriptor -> renderFunction(descriptor)
@@ -54,15 +55,19 @@ internal object ReflectionObjectRenderer {
         }
     }
 
+    // TODO
+    private fun renderName(name: Name): String =
+        name
+
     // TODO: include visibility
     fun renderProperty(descriptor: PropertyDescriptor): String {
         return buildString {
             append(if (descriptor.isVar) "var " else "val ")
             appendReceivers(descriptor)
-            append(renderer.renderName(descriptor.name, true))
+            append(renderName(descriptor.name))
 
             append(": ")
-            append(renderType(descriptor.type))
+            append(renderType(descriptor.returnType))
         }
     }
 
@@ -70,14 +75,14 @@ internal object ReflectionObjectRenderer {
         return buildString {
             append("fun ")
             appendReceivers(descriptor)
-            append(renderer.renderName(descriptor.name, true))
+            append(renderName(descriptor.name))
 
             descriptor.valueParameters.joinTo(this, separator = ", ", prefix = "(", postfix = ")") {
                 renderType(it.type) // TODO: vararg
             }
 
             append(": ")
-            append(renderType(descriptor.returnType!!))
+            append(renderType(descriptor.returnType))
         }
     }
 
@@ -90,7 +95,7 @@ internal object ReflectionObjectRenderer {
             }
 
             append(" -> ")
-            append(renderType(invoke.returnType!!))
+            append(renderType(invoke.returnType))
         }
     }
 
@@ -108,6 +113,6 @@ internal object ReflectionObjectRenderer {
     }
 
     fun renderType(type: KotlinType): String {
-        return renderer.renderType(type)
+        return type.render()
     }
 }

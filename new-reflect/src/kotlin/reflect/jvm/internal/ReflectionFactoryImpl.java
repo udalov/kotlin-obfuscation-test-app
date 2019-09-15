@@ -148,6 +148,6 @@ public class ReflectionFactoryImpl extends ReflectionFactory {
 
     public static void clearCaches() {
         KClassCacheKt.clearKClassCache();
-        ModuleByClassLoaderKt.clearModuleByClassLoaderCache();
+        // ModuleByClassLoaderKt.clearModuleByClassLoaderCache();
     }
 }

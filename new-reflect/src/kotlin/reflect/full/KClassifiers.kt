@@ -17,15 +17,11 @@
 @file:JvmName("KClassifiers")
 package kotlin.reflect.full
 
-import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.descriptors.parameters
 import kotlin.reflect.KClassifier
 import kotlin.reflect.KType
 import kotlin.reflect.KTypeProjection
-import kotlin.reflect.KVariance
 import kotlin.reflect.jvm.internal.KClassifierImpl
-import kotlin.reflect.jvm.internal.KTypeImpl
-import kotlin.reflect.jvm.internal.KotlinReflectionInternalError
 
 /**
  * Creates a [KType] instance with the given classifier, type arguments, nullability and annotations.
@@ -44,6 +40,7 @@ fun KClassifier.createType(
         nullable: Boolean = false,
         annotations: List<Annotation> = emptyList()
 ): KType {
+/*
     val descriptor = (this as? KClassifierImpl)?.descriptor
                      ?: throw KotlinReflectionInternalError("Cannot create type for an unsupported classifier: $this (${this.javaClass})")
 
@@ -60,8 +57,11 @@ fun KClassifier.createType(
             else Annotations.EMPTY // TODO: support type annotations
 
     return KTypeImpl(createKotlinType(typeAnnotations, typeConstructor, arguments, nullable))
+*/
+    TODO()
 }
 
+/*
 private fun createKotlinType(
         typeAnnotations: Annotations, typeConstructor: TypeConstructor, arguments: List<KTypeProjection>, nullable: Boolean
 ): SimpleType {
@@ -76,6 +76,7 @@ private fun createKotlinType(
         }
     }, nullable)
 }
+*/
 
 /**
  * Creates an instance of [KType] with the given classifier, substituting all its type parameters with star projections.
@@ -89,7 +90,7 @@ val KClassifier.starProjectedType: KType
         val descriptor = (this as? KClassifierImpl)?.descriptor
                          ?: return createType()
 
-        val typeParameters = descriptor.typeConstructor.parameters
+        val typeParameters = descriptor.parameters
         if (typeParameters.isEmpty()) return createType() // TODO: optimize, get defaultType from ClassDescriptor
 
         return createType(typeParameters.map { KTypeProjection.STAR })

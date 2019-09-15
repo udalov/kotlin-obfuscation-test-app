@@ -5,14 +5,10 @@
 
 package kotlin.reflect.jvm.internal.calls
 
+import org.jetbrains.kotlin.builtins.JvmAbi
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.load.java.JvmAbi
-import org.jetbrains.kotlin.resolve.descriptorUtil.classId
-import org.jetbrains.kotlin.resolve.isGetterOfUnderlyingPropertyOfInlineClass
-import org.jetbrains.kotlin.resolve.isInlineClass
-import org.jetbrains.kotlin.resolve.isInlineClassType
-import org.jetbrains.kotlin.resolve.isUnderlyingPropertyOfInlineClass
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.isInlineClassType
 import java.lang.reflect.Member
 import java.lang.reflect.Method
 import java.lang.reflect.Type
@@ -45,7 +41,7 @@ internal class InlineClassAwareCaller<out M : Member?>(
     }
 
     private val data: BoxUnboxData = run {
-        val box = descriptor.returnType!!.toInlineClass()?.getBoxMethod(descriptor)
+        val box = descriptor.returnType.toInlineClass()?.getBoxMethod(descriptor)
 
         if (descriptor.isGetterOfUnderlyingPropertyOfInlineClass()) {
             // Getter of the underlying val of an inline class is always called on a boxed receiver,
@@ -67,7 +63,7 @@ internal class InlineClassAwareCaller<out M : Member?>(
             descriptor.dispatchReceiverParameter != null && caller !is BoundCaller -> {
                 // If we have an unbound reference to the inline class member,
                 // its receiver (which is passed as argument 0) should also be unboxed.
-                if (descriptor.containingDeclaration.isInlineClass())
+                if (descriptor.containingDeclaration.isInline)
                     0
                 else
                     1
@@ -86,16 +82,16 @@ internal class InlineClassAwareCaller<out M : Member?>(
             } else if (descriptor is ConstructorDescriptor) {
                 val constructedClass = descriptor.constructedClass
                 if (constructedClass.isInner) {
-                    kotlinParameterTypes.add((constructedClass.containingDeclaration as ClassDescriptor).defaultType)
+                    kotlinParameterTypes.add(constructedClass.containingClass!!.defaultType)
                 }
             } else {
                 val containingDeclaration = descriptor.containingDeclaration
-                if (containingDeclaration is ClassDescriptor && containingDeclaration.isInlineClass()) {
+                if (containingDeclaration.isInline) {
                     kotlinParameterTypes.add(containingDeclaration.defaultType)
                 }
             }
 
-            descriptor.valueParameters.mapTo(kotlinParameterTypes, ValueParameterDescriptor::getType)
+            descriptor.valueParameters.mapTo(kotlinParameterTypes, ValueParameterDescriptor::type)
         }
         val expectedArgsSize = kotlinParameterTypes.size + shift + extraArgumentsTail
         if (arity != expectedArgsSize) {
@@ -153,7 +149,7 @@ internal fun <M : Member?> Caller<M>.createInlineClassAwareCallerIfNeeded(
     val needsInlineAwareCaller: Boolean =
         descriptor.isGetterOfUnderlyingPropertyOfInlineClass() ||
                 descriptor.valueParameters.any { it.type.isInlineClassType() } ||
-                descriptor.returnType?.isInlineClassType() == true ||
+                descriptor.returnType.isInlineClassType() ||
                 this !is BoundCaller && descriptor.hasInlineClassReceiver()
 
     return if (needsInlineAwareCaller) InlineClassAwareCaller(descriptor, this, isDefault) else this
@@ -177,10 +173,10 @@ internal fun Class<*>.getBoxMethod(descriptor: CallableMemberDescriptor): Method
     }
 
 internal fun KotlinType.toInlineClass(): Class<*>? =
-    constructor.declarationDescriptor.toInlineClass()
+    descriptor.toInlineClass()
 
 internal fun DeclarationDescriptor?.toInlineClass(): Class<*>? =
-    if (this is ClassDescriptor && isInlineClass())
+    if (this is ClassDescriptor && isInline)
         toJavaClass() ?: throw KotlinReflectionInternalError("Class object for the class $name cannot be found (classId=$classId)")
     else
         null

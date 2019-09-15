@@ -8,8 +8,6 @@ package kotlin.reflect.jvm.internal
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.load.java.descriptors.JavaCallableMemberDescriptor
-import java.lang.reflect.Array as ReflectArray
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.lang.reflect.WildcardType
@@ -19,6 +17,7 @@ import kotlin.reflect.*
 import kotlin.reflect.jvm.internal.calls.Caller
 import kotlin.reflect.jvm.javaType
 import kotlin.reflect.jvm.jvmErasure
+import java.lang.reflect.Array as ReflectArray
 
 internal abstract class KCallableImpl<out R> : KCallable<R>, KTypeParameterOwnerImpl {
     abstract val descriptor: CallableMemberDescriptor
@@ -61,7 +60,7 @@ internal abstract class KCallableImpl<out R> : KCallable<R>, KTypeParameterOwner
         // Constructor parameters of Java annotations are not ordered in any way, we order them by name here to be more stable.
         // Note that positional call (via "call") is not allowed unless there's a single non-"value" parameter,
         // so the order of parameters of Java annotation constructors here can be arbitrary
-        if (isAnnotationConstructor && descriptor is JavaCallableMemberDescriptor) {
+        if (isAnnotationConstructor && TODO() /* descriptor is JavaCallableMemberDescriptor*/) {
             result.sortBy { it.name }
         }
 

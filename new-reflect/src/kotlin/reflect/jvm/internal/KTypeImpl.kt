@@ -19,12 +19,12 @@ package kotlin.reflect.jvm.internal
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.descriptors.runtime.structure.parameterizedTypeArguments
-import org.jetbrains.kotlin.descriptors.runtime.structure.primitiveByWrapper
+import org.jetbrains.kotlin.misc.createArrayType
+import org.jetbrains.kotlin.misc.parameterizedTypeArguments
+import org.jetbrains.kotlin.misc.primitiveByWrapper
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.Variance
-import org.jetbrains.kotlin.types.isFlexible
+import org.jetbrains.kotlin.types.isNullableType
 import java.lang.reflect.GenericArrayType
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
@@ -49,7 +49,7 @@ internal class KTypeImpl(
     override val classifier: KClassifier? by ReflectProperties.lazySoft { convert(type) }
 
     private fun convert(type: KotlinType): KClassifier? {
-        when (val descriptor = type.constructor.declarationDescriptor) {
+        when (val descriptor = type.descriptor) {
             is ClassDescriptor -> {
                 val jClass = descriptor.toJavaClass() ?: return null
                 if (jClass.isArray) {
@@ -61,7 +61,7 @@ internal class KTypeImpl(
                     return KClassImpl(elementClassifier.jvmErasure.java.createArrayType())
                 }
 
-                if (!TypeUtils.isNullableType(type)) {
+                if (!type.isNullableType()) {
                     return KClassImpl(jClass.primitiveByWrapper ?: jClass)
                 }
 
@@ -119,10 +119,13 @@ internal class KTypeImpl(
         get() = type.computeAnnotations()
 
     internal fun makeNullableAsSpecified(nullable: Boolean): KTypeImpl {
+/*
         // If the type is not marked nullable, it's either a non-null type or a platform type.
         if (!type.isFlexible() && isMarkedNullable == nullable) return this
 
         return KTypeImpl(TypeUtils.makeNullableAsSpecified(type, nullable), computeJavaType)
+*/
+        return this
     }
 
     override fun equals(other: Any?) =

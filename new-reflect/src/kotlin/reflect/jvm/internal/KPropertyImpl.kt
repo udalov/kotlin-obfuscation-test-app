@@ -7,13 +7,9 @@ package kotlin.reflect.jvm.internal
 
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.load.java.DescriptorsJvmAbiUtil
-import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmProtoBufUtil
-import org.jetbrains.kotlin.resolve.DescriptorFactory
-import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.isUnderlyingPropertyOfInlineClass
-import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedPropertyDescriptor
-import org.jetbrains.kotlin.types.TypeUtils
+import org.jetbrains.kotlin.descriptors.annotations.hasAnnotation
+import org.jetbrains.kotlin.name.asString
+import org.jetbrains.kotlin.types.isNullableType
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import kotlin.jvm.internal.CallableReference
@@ -21,7 +17,6 @@ import kotlin.reflect.KFunction
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.IllegalPropertyDelegateAccessException
-import kotlin.reflect.jvm.internal.JvmPropertySignature.*
 import kotlin.reflect.jvm.internal.calls.*
 
 internal abstract class KPropertyImpl<out V> private constructor(
@@ -49,6 +44,8 @@ internal abstract class KPropertyImpl<out V> private constructor(
     override val isBound: Boolean get() = rawBoundReceiver != CallableReference.NO_RECEIVER
 
     private val _javaField: ReflectProperties.LazyVal<Field?> = ReflectProperties.lazy {
+        // TODO
+/*
         val jvmSignature = RuntimeTypeMapper.mapPropertySignature(descriptor)
         when (jvmSignature) {
             is KotlinProperty -> {
@@ -74,6 +71,8 @@ internal abstract class KPropertyImpl<out V> private constructor(
             is JavaMethodProperty -> null
             is MappedKotlinProperty -> null
         }
+*/
+        null
     }
 
     val javaField: Field? get() = _javaField()
@@ -149,7 +148,7 @@ internal abstract class KPropertyImpl<out V> private constructor(
 
         override val descriptor: PropertyGetterDescriptor by ReflectProperties.lazySoft {
             // TODO: default getter created this way won't have any source information
-            property.descriptor.getter ?: DescriptorFactory.createDefaultGetter(property.descriptor, Annotations.EMPTY)
+            property.descriptor.getter ?: createDefaultGetter(property.descriptor, Annotations.EMPTY)
         }
 
         override val caller: Caller<*> by ReflectProperties.lazy {
@@ -170,7 +169,7 @@ internal abstract class KPropertyImpl<out V> private constructor(
 
         override val descriptor: PropertySetterDescriptor by ReflectProperties.lazySoft {
             // TODO: default setter created this way won't have any source information
-            property.descriptor.setter ?: DescriptorFactory.createDefaultSetter(property.descriptor, Annotations.EMPTY, Annotations.EMPTY)
+            property.descriptor.setter ?: createDefaultSetter(property.descriptor, Annotations.EMPTY, Annotations.EMPTY)
         }
 
         override val caller: Caller<*> by ReflectProperties.lazy {
@@ -203,7 +202,7 @@ private fun KPropertyImpl.Accessor<*, *>.computeCallerForAccessor(isGetter: Bool
         property.descriptor.annotations.hasAnnotation(JVM_STATIC)
 
     fun isNotNullProperty(): Boolean =
-        !TypeUtils.isNullableType(property.descriptor.type)
+        !property.descriptor.returnType.isNullableType()
 
     fun computeFieldCaller(field: Field): CallerImpl<Field> = when {
         property.descriptor.isJvmFieldPropertyInCompanionObject() || !Modifier.isStatic(field.modifiers) ->
@@ -227,6 +226,7 @@ private fun KPropertyImpl.Accessor<*, *>.computeCallerForAccessor(isGetter: Bool
 
     val jvmSignature = RuntimeTypeMapper.mapPropertySignature(property.descriptor)
     return when (jvmSignature) {
+        /*
         is KotlinProperty -> {
             val accessorSignature = jvmSignature.signature.run {
                 when {
@@ -292,17 +292,21 @@ private fun KPropertyImpl.Accessor<*, *>.computeCallerForAccessor(isGetter: Bool
             return if (isBound) CallerImpl.Method.BoundInstance(accessor, boundReceiver)
             else CallerImpl.Method.Instance(accessor)
         }
+        */
+        else -> CallerImpl.Method.Instance(TODO())
     }.createInlineClassAwareCallerIfNeeded(descriptor)
 }
 
 private fun PropertyDescriptor.isJvmFieldPropertyInCompanionObject(): Boolean {
     val container = containingDeclaration
-    if (!DescriptorUtils.isCompanionObject(container)) return false
+    if (!container.isCompanionObject) return false
 
-    val outerClass = container.containingDeclaration
+    val outerClass = container.containingClass
     return when {
-        DescriptorUtils.isInterface(outerClass) || DescriptorUtils.isAnnotationClass(outerClass) ->
-            this is DeserializedPropertyDescriptor && JvmProtoBufUtil.isMovedFromInterfaceCompanion(proto)
+        outerClass?.kind == ClassKind.INTERFACE || outerClass?.kind == ClassKind.ANNOTATION_CLASS ->
+            // TODO
+            // this is DeserializedPropertyDescriptor && JvmProtoBufUtil.isMovedFromInterfaceCompanion(proto)
+            false
         else -> true
     }
 }

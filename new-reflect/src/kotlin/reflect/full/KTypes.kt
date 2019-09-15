@@ -17,7 +17,6 @@
 @file:JvmName("KTypes")
 package kotlin.reflect.full
 
-import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 import kotlin.reflect.KType
 import kotlin.reflect.jvm.internal.KTypeImpl
 
@@ -35,7 +34,7 @@ fun KType.withNullability(nullable: Boolean): KType {
  */
 @SinceKotlin("1.1")
 fun KType.isSubtypeOf(other: KType): Boolean {
-    return (this as KTypeImpl).type.isSubtypeOf((other as KTypeImpl).type)
+    TODO()
 }
 
 /**

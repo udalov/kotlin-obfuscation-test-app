@@ -16,9 +16,9 @@
 
 package kotlin.reflect.jvm.internal
 
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.resolve.jvm.shouldHideConstructorDueToInlineClassTypeValueParameters
+import org.jetbrains.kotlin.descriptors.shouldHideConstructorDueToInlineClassTypeValueParameters
+import org.jetbrains.kotlin.name.asString
 import java.lang.reflect.Constructor
 import java.lang.reflect.Member
 import java.lang.reflect.Method
@@ -119,7 +119,7 @@ internal class KFunctionImpl private constructor(
                 // In objects, $default's signature does _not_ contain the additional object instance parameter,
                 // as opposed to companion objects where the first parameter is the companion object instance.
                 descriptor.annotations.findAnnotation(JVM_STATIC) != null &&
-                        !(descriptor.containingDeclaration as ClassDescriptor).isCompanionObject ->
+                        !descriptor.containingDeclaration.isCompanionObject ->
                     createJvmStaticInObjectCaller(member)
 
                 else ->

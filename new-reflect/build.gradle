@@ -10,6 +10,7 @@ repositories {
 dependencies {
     api "org.jetbrains.kotlin:kotlin-stdlib"
     implementation "org.jetbrains.kotlin:kotlin-test"
+    implementation "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.1.0"
 
     project ":new-reflect"
 }
@@ -19,5 +20,11 @@ sourceSets {
         java {
             srcDir "src"
         }
+    }
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+    kotlinOptions {
+        freeCompilerArgs += ["-Xallow-kotlin-package"]
     }
 }

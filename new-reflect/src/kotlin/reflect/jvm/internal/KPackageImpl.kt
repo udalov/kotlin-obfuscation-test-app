@@ -18,58 +18,29 @@ package kotlin.reflect.jvm.internal
 
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.MemberScope
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-import org.jetbrains.kotlin.metadata.ProtoBuf
-import org.jetbrains.kotlin.metadata.deserialization.TypeTable
-import org.jetbrains.kotlin.metadata.deserialization.getExtensionOrNull
-import org.jetbrains.kotlin.metadata.jvm.JvmProtoBuf
-import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmMetadataVersion
-import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmNameResolver
-import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmProtoBufUtil
+import org.jetbrains.kotlin.misc.classId
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.scopes.MemberScope
-import org.jetbrains.kotlin.serialization.deserialization.MemberDeserializer
 import kotlin.reflect.KCallable
 import kotlin.reflect.jvm.internal.KDeclarationContainerImpl.MemberBelonginess.DECLARED
-import org.jetbrains.kotlin.descriptors.runtime.components.ReflectKotlinClass
-import org.jetbrains.kotlin.descriptors.runtime.structure.classId
 
 internal class KPackageImpl(
     override val jClass: Class<*>,
     @Suppress("unused") val usageModuleName: String? = null // may be useful for debug
 ) : KDeclarationContainerImpl() {
-    private inner class Data : KDeclarationContainerImpl.Data() {
-        private val kotlinClass: ReflectKotlinClass? by ReflectProperties.lazySoft {
-            ReflectKotlinClass.create(jClass)
-        }
-
+    private inner class Data {
         val scope: MemberScope by ReflectProperties.lazySoft {
-            val klass = kotlinClass
-
-            if (klass != null)
-                moduleData.packagePartScopeCache.getPackagePartScope(klass)
-            else MemberScope.Empty
+            TODO()
         }
 
         val multifileFacade: Class<*>? by ReflectProperties.lazy {
-            val facadeName = kotlinClass?.classHeader?.multifileClassName
+            val facadeName: String? = null // TODO
             // We need to check isNotEmpty because this is the value read from the annotation which cannot be null.
             // The default value for 'xs' is empty string, as declared in kotlin.Metadata
             if (facadeName != null && facadeName.isNotEmpty())
                 jClass.classLoader.loadClass(facadeName.replace('/', '.'))
             else null
-        }
-
-        val metadata: Triple<JvmNameResolver, ProtoBuf.Package, JvmMetadataVersion>? by ReflectProperties.lazy {
-            kotlinClass?.classHeader?.let { header ->
-                val data = header.data
-                val strings = header.strings
-                if (data != null && strings != null) {
-                    val (nameResolver, proto) = JvmProtoBufUtil.readPackageDataFrom(data, strings)
-                    Triple(nameResolver, proto, header.metadataVersion)
-                } else null
-            }
         }
 
         val members: Collection<KCallableImpl<*>> by ReflectProperties.lazySoft {
@@ -89,12 +60,13 @@ internal class KPackageImpl(
         get() = emptyList()
 
     override fun getProperties(name: Name): Collection<PropertyDescriptor> =
-        scope.getContributedVariables(name, NoLookupLocation.FROM_REFLECTION)
+        scope.getContributedVariables(name)
 
     override fun getFunctions(name: Name): Collection<FunctionDescriptor> =
-        scope.getContributedFunctions(name, NoLookupLocation.FROM_REFLECTION)
+        scope.getContributedFunctions(name)
 
     override fun getLocalProperty(index: Int): PropertyDescriptor? {
+/*
         return data().metadata?.let { (nameResolver, packageProto, metadataVersion) ->
             packageProto.getExtensionOrNull(JvmProtoBuf.packageLocalVariable, index)?.let { proto ->
                 deserializeToDescriptor(
@@ -103,6 +75,8 @@ internal class KPackageImpl(
                 )
             }
         }
+*/
+        return null
     }
 
     override fun equals(other: Any?): Boolean =

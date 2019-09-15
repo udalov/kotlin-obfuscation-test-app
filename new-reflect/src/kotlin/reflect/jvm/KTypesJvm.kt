@@ -19,8 +19,7 @@
 package kotlin.reflect.jvm
 
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind.ANNOTATION_CLASS
-import org.jetbrains.kotlin.descriptors.ClassKind.INTERFACE
+import org.jetbrains.kotlin.descriptors.ClassKind
 import kotlin.reflect.KClass
 import kotlin.reflect.KClassifier
 import kotlin.reflect.KType
@@ -42,8 +41,8 @@ internal val KClassifier.jvmErasure: KClass<*>
             // See getRepresentativeUpperBound in typeSignatureMapping.kt
             val bounds = upperBounds
             val representativeBound = bounds.firstOrNull {
-                val classDescriptor = (it as KTypeImpl).type.constructor.declarationDescriptor as? ClassDescriptor
-                classDescriptor != null && classDescriptor.kind != INTERFACE && classDescriptor.kind != ANNOTATION_CLASS
+                val classDescriptor = (it as KTypeImpl).type.descriptor as? ClassDescriptor
+                classDescriptor != null && classDescriptor.kind != ClassKind.INTERFACE && classDescriptor.kind != ClassKind.ANNOTATION_CLASS
             } ?: bounds.firstOrNull()
             representativeBound?.jvmErasure ?: Any::class
         }
