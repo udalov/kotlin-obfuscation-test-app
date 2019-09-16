@@ -39,13 +39,10 @@ internal abstract class KDeclarationContainerImpl : ClassBasedDeclarationContain
 
     abstract fun getLocalProperty(index: Int): PropertyDescriptor?
 
-    protected fun getMembers(scope: MemberScope, belonginess: MemberBelonginess): Collection<KCallableImpl<*>> {
-        return scope.getContributedDescriptors().mapNotNull { descriptor ->
-            if (descriptor !is CallableMemberDescriptor || !belonginess.accept(descriptor)) return@mapNotNull null
-
-            createKCallable(descriptor, this)
+    protected fun getMembers(scope: MemberScope, belonginess: MemberBelonginess): Collection<KCallableImpl<*>> =
+        (scope.functions + scope.properties).mapNotNull { descriptor ->
+            if (belonginess.accept(descriptor)) createKCallable(descriptor, this) else null
         }.toList()
-    }
 
     protected enum class MemberBelonginess {
         DECLARED,

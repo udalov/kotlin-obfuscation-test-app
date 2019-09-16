@@ -19,7 +19,6 @@
 package kotlin.reflect.jvm
 
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import kotlin.reflect.KClass
 import kotlin.reflect.KClassifier
 import kotlin.reflect.KType
@@ -42,7 +41,7 @@ internal val KClassifier.jvmErasure: KClass<*>
             val bounds = upperBounds
             val representativeBound = bounds.firstOrNull {
                 val classDescriptor = (it as KTypeImpl).type.descriptor as? ClassDescriptor
-                classDescriptor != null && classDescriptor.kind != ClassKind.INTERFACE && classDescriptor.kind != ClassKind.ANNOTATION_CLASS
+                classDescriptor != null && !classDescriptor.isInterface && !classDescriptor.isAnnotationClass
             } ?: bounds.firstOrNull()
             representativeBound?.jvmErasure ?: Any::class
         }

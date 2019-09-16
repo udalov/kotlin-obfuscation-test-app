@@ -18,7 +18,6 @@ package kotlin.reflect.jvm.internal
 
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.shouldHideConstructorDueToInlineClassTypeValueParameters
-import org.jetbrains.kotlin.name.asString
 import java.lang.reflect.Constructor
 import java.lang.reflect.Member
 import java.lang.reflect.Method
@@ -45,7 +44,7 @@ internal class KFunctionImpl private constructor(
 
     constructor(container: KDeclarationContainerImpl, descriptor: FunctionDescriptor) : this(
         container,
-        descriptor.name.asString(),
+        descriptor.name,
         RuntimeTypeMapper.mapSignature(descriptor).asString(),
         descriptor
     )
@@ -56,11 +55,10 @@ internal class KFunctionImpl private constructor(
         container.findFunctionDescriptor(name, signature)
     }
 
-    override val name: String get() = descriptor.name.asString()
+    override val name: String get() = descriptor.name
 
     override val caller: Caller<*> by ReflectProperties.lazy caller@{
-        val jvmSignature = RuntimeTypeMapper.mapSignature(descriptor)
-        val member: Member? = when (jvmSignature) {
+        val member: Member? = when (val jvmSignature = RuntimeTypeMapper.mapSignature(descriptor)) {
             is KotlinConstructor -> {
                 if (isAnnotationConstructor)
                     return@caller AnnotationConstructorCaller(container.jClass, parameters.map { it.name!! }, POSITIONAL_CALL, KOTLIN)
@@ -91,8 +89,7 @@ internal class KFunctionImpl private constructor(
     }
 
     override val defaultCaller: Caller<*>? by ReflectProperties.lazy defaultCaller@{
-        val jvmSignature = RuntimeTypeMapper.mapSignature(descriptor)
-        val member: Member? = when (jvmSignature) {
+        val member: Member? = when (val jvmSignature = RuntimeTypeMapper.mapSignature(descriptor)) {
             is KotlinFunction -> {
                 container.findDefaultMethod(jvmSignature.methodName, jvmSignature.methodDesc, !Modifier.isStatic(caller.member!!.modifiers))
             }

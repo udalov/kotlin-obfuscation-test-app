@@ -26,7 +26,6 @@ import org.jetbrains.kotlin.misc.functionClassArity
 import org.jetbrains.kotlin.misc.wrapperByPrimitive
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.name.asString
 import kotlin.jvm.internal.TypeIntrinsics
 import kotlin.reflect.*
 import kotlin.reflect.jvm.internal.KDeclarationContainerImpl.MemberBelonginess.DECLARED
@@ -51,7 +50,7 @@ internal class KClassImpl<T : Any>(
             val classId = classId
             when {
                 classId.isLocal -> calculateLocalClassName(jClass)
-                else -> classId.shortClassName.asString()
+                else -> classId.shortClassName
             }
         }
 
@@ -92,10 +91,10 @@ internal class KClassImpl<T : Any>(
         @Suppress("UNCHECKED_CAST")
         val objectInstance: T? by ReflectProperties.lazy {
             val descriptor = descriptor
-            if (descriptor.kind != ClassKind.OBJECT) return@lazy null
+            if (!descriptor.isObject) return@lazy null
 
             val field = if (descriptor.isCompanionObject && !CompanionObjectMapping.isMappedIntrinsicCompanionObject(descriptor)) {
-                jClass.enclosingClass.getDeclaredField(descriptor.name.asString())
+                jClass.enclosingClass.getDeclaredField(descriptor.name)
             } else {
                 jClass.getDeclaredField(JvmAbi.INSTANCE_FIELD)
             }
@@ -127,8 +126,8 @@ internal class KClassImpl<T : Any>(
                 }
             }
             if (!KotlinBuiltIns.isSpecialClassWithNoSupertypes(descriptor) && result.all {
-                val classKind = (it.type.descriptor as ClassDescriptor).kind
-                classKind == ClassKind.INTERFACE || classKind == ClassKind.ANNOTATION_CLASS
+                val descriptor = it.type.descriptor as ClassDescriptor
+                descriptor.isInterface || descriptor.isAnnotationClass
             }) {
                 result += KTypeImpl(KotlinBuiltInsImpl.anyType) { Any::class.java }
             }
@@ -182,19 +181,17 @@ internal class KClassImpl<T : Any>(
     override val constructorDescriptors: Collection<ConstructorDescriptor>
         get() {
             val descriptor = descriptor
-            if (descriptor.kind == ClassKind.INTERFACE || descriptor.kind == ClassKind.OBJECT) {
+            if (descriptor.isInterface || descriptor.isObject) {
                 return emptyList()
             }
             return descriptor.constructors
         }
 
     override fun getProperties(name: Name): Collection<PropertyDescriptor> =
-        (memberScope.getContributedVariables(name) +
-                staticScope.getContributedVariables(name))
+        memberScope.getProperties(name) + staticScope.getProperties(name)
 
     override fun getFunctions(name: Name): Collection<FunctionDescriptor> =
-        memberScope.getContributedFunctions(name) +
-                staticScope.getContributedFunctions(name)
+        memberScope.getFunctions(name) + staticScope.getFunctions(name)
 
     override fun getLocalProperty(index: Int): PropertyDescriptor? {
         // TODO: also check that this is a synthetic class (Metadata.k == 3)
@@ -250,16 +247,16 @@ internal class KClassImpl<T : Any>(
         get() = descriptor.visibility.toKVisibility()
 
     override val isFinal: Boolean
-        get() = descriptor.modality == Modality.FINAL
+        get() = descriptor.isFinal
 
     override val isOpen: Boolean
-        get() = descriptor.modality == Modality.OPEN
+        get() = descriptor.isOpen
 
     override val isAbstract: Boolean
-        get() = descriptor.modality == Modality.ABSTRACT
+        get() = descriptor.isAbstract
 
     override val isSealed: Boolean
-        get() = descriptor.modality == Modality.SEALED
+        get() = descriptor.isSealed
 
     override val isData: Boolean
         get() = descriptor.isData

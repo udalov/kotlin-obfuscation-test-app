@@ -5,7 +5,8 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.Variance
+import org.jetbrains.kotlin.types.TypeProjection
+import kotlin.reflect.KVariance
 
 interface DeclarationDescriptor : Annotated {
     val name: Name
@@ -34,9 +35,11 @@ interface CallableMemberDescriptor : DeclarationDescriptor {
 
     val returnType: KotlinType
 
+    val isFinal: Boolean
+    val isOpen: Boolean
+    val isAbstract: Boolean
     val isExternal: Boolean
 
-    val modality: Modality
     val isReal: Boolean
     fun hasSynthesizedParameterNames(): Boolean
     fun render(): String
@@ -71,21 +74,26 @@ interface ConstructorDescriptor : FunctionDescriptor {
 interface ClassifierDescriptor : DeclarationDescriptor
 interface TypeParameterDescriptor : ClassifierDescriptor {
     val upperBounds: List<KotlinType>
-    val variance: Variance
+    val variance: KVariance
     val isReified: Boolean
 }
 
 interface TypeAliasDescriptor : ClassifierDescriptor
 interface ClassDescriptor : ClassifierDescriptor {
-    val kind: ClassKind
-    val modality: Modality
+    val isInterface: Boolean
+    val isAnnotationClass: Boolean
+    val isObject: Boolean
+
+    val isFinal: Boolean
+    val isOpen: Boolean
+    val isAbstract: Boolean
+    val isSealed: Boolean
+
     val isData: Boolean
     val isInner: Boolean
     val isInline: Boolean
     val isCompanionObject: Boolean
     val isFun: Boolean
-
-    val defaultType: KotlinType
 
     val declaredTypeParameters: List<TypeParameterDescriptor>
     val supertypes: List<KotlinType>
@@ -100,15 +108,16 @@ interface ClassDescriptor : ClassifierDescriptor {
     val staticScope: MemberScope
 }
 
-interface MemberScope {
-    fun getContributedDescriptors(): List<DeclarationDescriptor>
-    fun getContributedVariables(name: Name): List<PropertyDescriptor>
-    fun getContributedFunctions(name: Name): List<FunctionDescriptor>
-}
+class MemberScope(
+    val properties: List<PropertyDescriptor>,
+    val functions: List<FunctionDescriptor>
+)
 
-enum class ClassKind {
-    CLASS, INTERFACE, ENUM_CLASS, ENUM_ENTRY, ANNOTATION_CLASS, OBJECT
-}
+fun MemberScope.getFunctions(name: Name): List<FunctionDescriptor> =
+    functions.filter { it.name == name }
+
+fun MemberScope.getProperties(name: Name): List<PropertyDescriptor> =
+    properties.filter { it.name == name }
 
 enum class DescriptorVisibility {
     PRIVATE,
@@ -127,12 +136,6 @@ enum class Modality {
 }
 
 object DescriptorVisibilities {
-    val PRIVATE = DescriptorVisibility.PRIVATE
-    val PRIVATE_TO_THIS = DescriptorVisibility.PRIVATE_TO_THIS
-    val INTERNAL = DescriptorVisibility.INTERNAL
-    val PROTECTED = DescriptorVisibility.PROTECTED
-    val PUBLIC = DescriptorVisibility.PUBLIC
-
     fun compare(a: DescriptorVisibility, b: DescriptorVisibility): Int? {
         TODO()
     }
@@ -178,3 +181,13 @@ val ClassifierDescriptor?.classId: ClassId?
 val ClassifierDescriptor.parameters: List<TypeParameterDescriptor>
     // TODO
     get() = (this as? ClassDescriptor)?.declaredTypeParameters.orEmpty()
+
+val ClassifierDescriptor.defaultType: KotlinType
+    get() = KotlinType(
+        this,
+        (this as? ClassDescriptor)?.parameters?.map {
+            TypeProjection(it.defaultType, false, KVariance.INVARIANT)
+        }.orEmpty(),
+        false,
+        Annotations.EMPTY
+    )

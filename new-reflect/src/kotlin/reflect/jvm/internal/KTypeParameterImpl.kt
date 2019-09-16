@@ -17,8 +17,6 @@
 package kotlin.reflect.jvm.internal
 
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.name.asString
-import org.jetbrains.kotlin.types.Variance
 import kotlin.jvm.internal.TypeParameterReference
 import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
@@ -29,16 +27,12 @@ internal class KTypeParameterImpl(
     override val descriptor: TypeParameterDescriptor,
 ) : KTypeParameter, KClassifierImpl {
     override val name: String
-        get() = descriptor.name.asString()
+        get() = descriptor.name
 
     override val upperBounds: List<KType> by ReflectProperties.lazySoft { descriptor.upperBounds.map(::KTypeImpl) }
 
     override val variance: KVariance
-        get() = when (descriptor.variance) {
-            Variance.INVARIANT -> KVariance.INVARIANT
-            Variance.IN_VARIANCE -> KVariance.IN
-            Variance.OUT_VARIANCE -> KVariance.OUT
-        }
+        get() = descriptor.variance
 
     override val isReified: Boolean
         get() = descriptor.isReified

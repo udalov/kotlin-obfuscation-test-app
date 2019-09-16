@@ -8,7 +8,6 @@ package kotlin.reflect.jvm.internal
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.annotations.hasAnnotation
-import org.jetbrains.kotlin.name.asString
 import org.jetbrains.kotlin.types.isNullableType
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
@@ -17,7 +16,10 @@ import kotlin.reflect.KFunction
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.IllegalPropertyDelegateAccessException
-import kotlin.reflect.jvm.internal.calls.*
+import kotlin.reflect.jvm.internal.calls.Caller
+import kotlin.reflect.jvm.internal.calls.CallerImpl
+import kotlin.reflect.jvm.internal.calls.ThrowingCaller
+import kotlin.reflect.jvm.internal.calls.coerceToExpectedReceiverType
 
 internal abstract class KPropertyImpl<out V> private constructor(
     override val container: KDeclarationContainerImpl,
@@ -32,7 +34,7 @@ internal abstract class KPropertyImpl<out V> private constructor(
 
     constructor(container: KDeclarationContainerImpl, descriptor: PropertyDescriptor) : this(
         container,
-        descriptor.name.asString(),
+        descriptor.name,
         RuntimeTypeMapper.mapPropertySignature(descriptor).asString(),
         descriptor,
         CallableReference.NO_RECEIVER
@@ -224,9 +226,9 @@ private fun KPropertyImpl.Accessor<*, *>.computeCallerForAccessor(isGetter: Bool
             else CallerImpl.FieldSetter.Static(field, isNotNullProperty())
     }
 
+    /*
     val jvmSignature = RuntimeTypeMapper.mapPropertySignature(property.descriptor)
     return when (jvmSignature) {
-        /*
         is KotlinProperty -> {
             val accessorSignature = jvmSignature.signature.run {
                 when {
@@ -292,9 +294,9 @@ private fun KPropertyImpl.Accessor<*, *>.computeCallerForAccessor(isGetter: Bool
             return if (isBound) CallerImpl.Method.BoundInstance(accessor, boundReceiver)
             else CallerImpl.Method.Instance(accessor)
         }
-        */
-        else -> CallerImpl.Method.Instance(TODO())
     }.createInlineClassAwareCallerIfNeeded(descriptor)
+    */
+    TODO()
 }
 
 private fun PropertyDescriptor.isJvmFieldPropertyInCompanionObject(): Boolean {
@@ -303,7 +305,7 @@ private fun PropertyDescriptor.isJvmFieldPropertyInCompanionObject(): Boolean {
 
     val outerClass = container.containingClass
     return when {
-        outerClass?.kind == ClassKind.INTERFACE || outerClass?.kind == ClassKind.ANNOTATION_CLASS ->
+        outerClass?.isInterface == true || outerClass?.isAnnotationClass == true ->
             // TODO
             // this is DeserializedPropertyDescriptor && JvmProtoBufUtil.isMovedFromInterfaceCompanion(proto)
             false

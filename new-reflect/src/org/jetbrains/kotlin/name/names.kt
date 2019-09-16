@@ -1,7 +1,6 @@
 package org.jetbrains.kotlin.name
 
 typealias Name = String
-fun Name.asString(): String = this
 
 data class FqName(val fqName: String) {
     val isRoot: Boolean get() = fqName.isEmpty()

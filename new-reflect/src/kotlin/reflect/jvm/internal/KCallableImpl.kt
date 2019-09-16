@@ -7,7 +7,6 @@ package kotlin.reflect.jvm.internal
 
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.Modality
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.lang.reflect.WildcardType
@@ -72,7 +71,7 @@ internal abstract class KCallableImpl<out R> : KCallable<R>, KTypeParameterOwner
         get() = _parameters()
 
     private val _returnType = ReflectProperties.lazySoft {
-        KTypeImpl(descriptor.returnType!!) {
+        KTypeImpl(descriptor.returnType) {
             extractContinuationArgument() ?: caller.returnType
         }
     }
@@ -91,13 +90,13 @@ internal abstract class KCallableImpl<out R> : KCallable<R>, KTypeParameterOwner
         get() = descriptor.visibility.toKVisibility()
 
     override val isFinal: Boolean
-        get() = descriptor.modality == Modality.FINAL
+        get() = descriptor.isFinal
 
     override val isOpen: Boolean
-        get() = descriptor.modality == Modality.OPEN
+        get() = descriptor.isOpen
 
     override val isAbstract: Boolean
-        get() = descriptor.modality == Modality.ABSTRACT
+        get() = descriptor.isAbstract
 
     protected val isAnnotationConstructor: Boolean
         get() = name == "<init>" && container.jClass.isAnnotation

@@ -20,6 +20,7 @@
 package kotlin.reflect.full
 
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.defaultType
 import kotlin.reflect.*
 import kotlin.reflect.jvm.internal.KCallableImpl
 import kotlin.reflect.jvm.internal.KClassImpl

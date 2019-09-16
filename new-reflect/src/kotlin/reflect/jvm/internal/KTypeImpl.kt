@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.misc.createArrayType
 import org.jetbrains.kotlin.misc.parameterizedTypeArguments
 import org.jetbrains.kotlin.misc.primitiveByWrapper
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.isNullableType
 import java.lang.reflect.GenericArrayType
 import java.lang.reflect.ParameterizedType
@@ -33,6 +32,7 @@ import kotlin.LazyThreadSafetyMode.PUBLICATION
 import kotlin.jvm.internal.KTypeBase
 import kotlin.reflect.KClassifier
 import kotlin.reflect.KTypeProjection
+import kotlin.reflect.KVariance
 import kotlin.reflect.jvm.jvmErasure
 
 internal class KTypeImpl(
@@ -104,9 +104,9 @@ internal class KTypeImpl(
                     }
                 })
                 when (typeProjection.projectionKind) {
-                    Variance.INVARIANT -> KTypeProjection.invariant(type)
-                    Variance.IN_VARIANCE -> KTypeProjection.contravariant(type)
-                    Variance.OUT_VARIANCE -> KTypeProjection.covariant(type)
+                    KVariance.INVARIANT -> KTypeProjection.invariant(type)
+                    KVariance.IN -> KTypeProjection.contravariant(type)
+                    KVariance.OUT -> KTypeProjection.covariant(type)
                 }
             }
         }

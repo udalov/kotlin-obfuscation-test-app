@@ -16,10 +16,7 @@
 
 package kotlin.reflect.jvm.internal
 
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.MemberScope
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.misc.classId
 import org.jetbrains.kotlin.name.Name
 import kotlin.reflect.KCallable
@@ -60,10 +57,10 @@ internal class KPackageImpl(
         get() = emptyList()
 
     override fun getProperties(name: Name): Collection<PropertyDescriptor> =
-        scope.getContributedVariables(name)
+        scope.getProperties(name)
 
     override fun getFunctions(name: Name): Collection<FunctionDescriptor> =
-        scope.getContributedFunctions(name)
+        scope.getFunctions(name)
 
     override fun getLocalProperty(index: Int): PropertyDescriptor? {
 /*

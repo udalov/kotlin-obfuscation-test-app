@@ -3,24 +3,24 @@ package org.jetbrains.kotlin.types
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
+import kotlin.reflect.KVariance
 
-interface KotlinType : Annotated {
-    val descriptor: ClassifierDescriptor
-    val arguments: List<TypeProjection>
-    val isMarkedNullable: Boolean
-
-    fun render(): String
+class KotlinType(
+    val descriptor: ClassifierDescriptor,
+    val arguments: List<TypeProjection>,
+    val isMarkedNullable: Boolean,
+    override val annotations: Annotations
+) : Annotated {
+    fun render(): String =
+        TODO()
 }
 
-interface TypeProjection {
-    val type: KotlinType
-    val isStarProjection: Boolean
-    val projectionKind: Variance
-}
-
-enum class Variance {
-    INVARIANT, IN_VARIANCE, OUT_VARIANCE,
-}
+class TypeProjection(
+    val type: KotlinType,
+    val isStarProjection: Boolean,
+    val projectionKind: KVariance
+)
 
 fun KotlinType.isNullableType(): Boolean =
     // TODO: TypeUtils.isNullableType

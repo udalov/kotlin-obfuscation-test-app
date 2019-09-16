@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.declaresOrInheritsDefaultValue
-import org.jetbrains.kotlin.name.asString
 import kotlin.reflect.KParameter
 import kotlin.reflect.KType
 
@@ -39,7 +38,7 @@ internal class KParameterImpl(
             val valueParameter = descriptor as? ValueParameterDescriptor ?: return null
             if (valueParameter.containingDeclaration.hasSynthesizedParameterNames()) return null
             val name = valueParameter.name
-            return if (name.startsWith("<")) null else name.asString()
+            return if (name.startsWith("<")) null else name
         }
 
     override val type: KType

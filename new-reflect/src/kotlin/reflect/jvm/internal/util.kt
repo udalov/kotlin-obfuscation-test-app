@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.misc.tryLoadClass
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.asString
 import java.lang.reflect.Type
 import kotlin.jvm.internal.FunctionReference
 import kotlin.jvm.internal.PropertyReference
@@ -90,11 +89,10 @@ internal fun Class<*>.createArrayType(): Class<*> =
 
 internal fun DescriptorVisibility.toKVisibility(): KVisibility? =
     when (this) {
-        DescriptorVisibilities.PUBLIC -> KVisibility.PUBLIC
-        DescriptorVisibilities.PROTECTED -> KVisibility.PROTECTED
-        DescriptorVisibilities.INTERNAL -> KVisibility.INTERNAL
-        DescriptorVisibilities.PRIVATE, DescriptorVisibilities.PRIVATE_TO_THIS -> KVisibility.PRIVATE
-        else -> null
+        DescriptorVisibility.PUBLIC -> KVisibility.PUBLIC
+        DescriptorVisibility.PROTECTED -> KVisibility.PROTECTED
+        DescriptorVisibility.INTERNAL -> KVisibility.INTERNAL
+        DescriptorVisibility.PRIVATE, DescriptorVisibility.PRIVATE_TO_THIS -> KVisibility.PRIVATE
     }
 
 internal fun Annotated.computeAnnotations(): List<Annotation> =
@@ -118,7 +116,7 @@ private fun AnnotationDescriptor.toAnnotationInstance(): Annotation? {
     return createAnnotationInstance(
         annotationClass,
         allValueArguments.entries
-            .mapNotNull { (name, value) -> value.toRuntimeValue(annotationClass.classLoader)?.let(name.asString()::to) }
+            .mapNotNull { (name, value) -> value.toRuntimeValue(annotationClass.classLoader)?.let(name::to) }
             .toMap()
     )
 }
@@ -131,7 +129,7 @@ private fun ConstantValue<*>.toRuntimeValue(classLoader: ClassLoader): Any? = wh
         val (enumClassId, entryName) = value
         loadClass(classLoader, enumClassId)?.let { enumClass ->
             @Suppress("UNCHECKED_CAST")
-            Util.getEnumConstantByName(enumClass as Class<out Enum<*>>, entryName.asString())
+            Util.getEnumConstantByName(enumClass as Class<out Enum<*>>, entryName)
         }
     }
     is KClassValue -> when (val classValue = value) {
