@@ -16,6 +16,8 @@
 
 package kotlin.reflect.jvm.internal
 
+import kotlinx.metadata.jvm.KotlinClassHeader
+import kotlinx.metadata.jvm.KotlinClassMetadata
 import org.jetbrains.kotlin.builtins.JvmAbi
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.KotlinBuiltInsImpl
@@ -36,10 +38,7 @@ internal class KClassImpl<T : Any>(
 ) : KDeclarationContainerImpl(), KClass<T>, KClassifierImpl, KTypeParameterOwnerImpl {
     inner class Data {
         val descriptor: ClassDescriptor by ReflectProperties.lazySoft {
-            val descriptor =
-                TODO()
-
-            descriptor ?: reportUnresolvedClass()
+            ModuleDescriptor(jClass.classLoader).createClass(jClass) ?: reportUnresolvedClass()
         }
 
         val annotations: List<Annotation> by ReflectProperties.lazySoft { descriptor.computeAnnotations() }

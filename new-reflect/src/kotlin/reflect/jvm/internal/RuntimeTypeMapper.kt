@@ -17,12 +17,14 @@
 package kotlin.reflect.jvm.internal
 
 import kotlinx.metadata.jvm.JvmMethodSignature
+import kotlinx.metadata.jvm.signature
 import org.jetbrains.kotlin.builtins.JavaToKotlinClassMap
 import org.jetbrains.kotlin.builtins.JvmPrimitiveType
 import org.jetbrains.kotlin.builtins.PrimitiveType
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptorImpl
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.misc.classId
 import org.jetbrains.kotlin.misc.desc
@@ -87,6 +89,10 @@ internal object RuntimeTypeMapper {
         if (isKnownBuiltInFunction(function)) {
             TODO()
             // return mapJvmFunctionSignature(function)
+        }
+
+        if (function is FunctionDescriptorImpl) {
+            return JvmFunctionSignature.KotlinFunction(function.function.signature ?: error("No signature for ${function.render()}"))
         }
 
         // throw KotlinReflectionInternalError("Unknown origin of $function (${function.javaClass})")
