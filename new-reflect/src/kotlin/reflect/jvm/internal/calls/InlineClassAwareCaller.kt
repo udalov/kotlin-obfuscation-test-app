@@ -63,7 +63,7 @@ internal class InlineClassAwareCaller<out M : Member?>(
             descriptor.dispatchReceiverParameter != null && caller !is BoundCaller -> {
                 // If we have an unbound reference to the inline class member,
                 // its receiver (which is passed as argument 0) should also be unboxed.
-                if (descriptor.containingDeclaration.isInline)
+                if (descriptor.containingClass?.isInline == true)
                     0
                 else
                     1
@@ -85,8 +85,8 @@ internal class InlineClassAwareCaller<out M : Member?>(
                     kotlinParameterTypes.add(constructedClass.containingClass!!.defaultType)
                 }
             } else {
-                val containingDeclaration = descriptor.containingDeclaration
-                if (containingDeclaration.isInline) {
+                val containingDeclaration = descriptor.containingClass
+                if (containingDeclaration != null && containingDeclaration.isInline) {
                     kotlinParameterTypes.add(containingDeclaration.defaultType)
                 }
             }
@@ -189,7 +189,7 @@ private val CallableMemberDescriptor.expectedReceiverType: KotlinType?
             extensionReceiver != null -> extensionReceiver.type
             dispatchReceiver == null -> null
             this is ConstructorDescriptor -> dispatchReceiver.type
-            else -> (containingDeclaration as? ClassDescriptor)?.defaultType
+            else -> containingClass?.defaultType
         }
     }
 

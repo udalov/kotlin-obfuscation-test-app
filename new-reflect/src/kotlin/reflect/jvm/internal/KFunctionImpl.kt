@@ -116,7 +116,7 @@ internal class KFunctionImpl private constructor(
                 // In objects, $default's signature does _not_ contain the additional object instance parameter,
                 // as opposed to companion objects where the first parameter is the companion object instance.
                 descriptor.annotations.findAnnotation(JVM_STATIC) != null &&
-                        !descriptor.containingDeclaration.isCompanionObject ->
+                        descriptor.containingClass?.isCompanionObject != true ->
                     createJvmStaticInObjectCaller(member)
 
                 else ->

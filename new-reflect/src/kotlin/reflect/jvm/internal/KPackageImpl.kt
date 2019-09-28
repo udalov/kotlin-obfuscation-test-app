@@ -18,6 +18,7 @@ package kotlin.reflect.jvm.internal
 
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.misc.classId
+import org.jetbrains.kotlin.misc.safeClassLoader
 import org.jetbrains.kotlin.name.Name
 import kotlin.reflect.KCallable
 import kotlin.reflect.jvm.internal.KDeclarationContainerImpl.MemberBelonginess.DECLARED
@@ -28,7 +29,7 @@ internal class KPackageImpl(
 ) : KDeclarationContainerImpl() {
     private inner class Data {
         val scope: MemberScope by ReflectProperties.lazySoft {
-            TODO()
+            ModuleDescriptorImpl(jClass.safeClassLoader).createFileDescriptor(jClass).scope
         }
 
         val multifileFacade: Class<*>? by ReflectProperties.lazy {
@@ -36,7 +37,7 @@ internal class KPackageImpl(
             // We need to check isNotEmpty because this is the value read from the annotation which cannot be null.
             // The default value for 'xs' is empty string, as declared in kotlin.Metadata
             if (facadeName != null && facadeName.isNotEmpty())
-                jClass.classLoader.loadClass(facadeName.replace('/', '.'))
+                jClass.safeClassLoader.loadClass(facadeName.replace('/', '.'))
             else null
         }
 

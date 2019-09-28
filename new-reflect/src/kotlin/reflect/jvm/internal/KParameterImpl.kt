@@ -52,7 +52,7 @@ internal class KParameterImpl(
                 // In case of fake overrides, dispatch receiver type should be computed manually because Caller.parameterTypes returns
                 // types from Java reflection where receiver is always the declaring class of the original declaration
                 // (not the class where the fake override is generated, which is returned by KParameter.type)
-                callable.descriptor.containingDeclaration.toJavaClass()
+                callable.descriptor.containingClass?.toJavaClass()
                     ?: throw KotlinReflectionInternalError("Cannot determine receiver Java type of inherited declaration: $descriptor")
             } else {
                 callable.caller.parameterTypes[index]

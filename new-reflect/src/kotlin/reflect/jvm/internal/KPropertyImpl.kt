@@ -300,8 +300,8 @@ private fun KPropertyImpl.Accessor<*, *>.computeCallerForAccessor(isGetter: Bool
 }
 
 private fun PropertyDescriptor.isJvmFieldPropertyInCompanionObject(): Boolean {
-    val container = containingDeclaration
-    if (!container.isCompanionObject) return false
+    val container = containingClass
+    if (container == null || !container.isCompanionObject) return false
 
     val outerClass = container.containingClass
     return when {

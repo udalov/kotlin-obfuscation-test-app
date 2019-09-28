@@ -199,7 +199,7 @@ internal fun Any?.asKCallableImpl(): KCallableImpl<*>? =
 
 internal val CallableMemberDescriptor.instanceReceiverParameter: ReceiverParameterDescriptor?
     get() =
-        if (dispatchReceiverParameter != null) containingDeclaration.thisAsReceiverParameter
+        if (dispatchReceiverParameter != null) containingClass?.thisAsReceiverParameter
         else null
 
 internal val KType.isInlineClassType: Boolean

@@ -17,11 +17,18 @@
 @file:JvmName("KClassifiers")
 package kotlin.reflect.full
 
+import org.jetbrains.kotlin.builtins.KotlinBuiltInsImpl
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.parameters
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeProjection
 import kotlin.reflect.KClassifier
 import kotlin.reflect.KType
 import kotlin.reflect.KTypeProjection
+import kotlin.reflect.KVariance
 import kotlin.reflect.jvm.internal.KClassifierImpl
+import kotlin.reflect.jvm.internal.KTypeImpl
+import kotlin.reflect.jvm.internal.KotlinReflectionInternalError
 
 /**
  * Creates a [KType] instance with the given classifier, type arguments, nullability and annotations.
@@ -40,10 +47,18 @@ fun KClassifier.createType(
         nullable: Boolean = false,
         annotations: List<Annotation> = emptyList()
 ): KType {
-/*
     val descriptor = (this as? KClassifierImpl)?.descriptor
                      ?: throw KotlinReflectionInternalError("Cannot create type for an unsupported classifier: $this (${this.javaClass})")
 
+    val kotlinType = KotlinType(descriptor, arguments.map { (variance, type) ->
+        // TODO: avoid cast
+        val kotlinType = (type as? KTypeImpl)?.type ?: KotlinBuiltInsImpl.anyType
+        TypeProjection(kotlinType, variance == null, variance ?: KVariance.OUT /* TODO verify */)
+    }, nullable, Annotations.EMPTY /* TODO */)
+
+    KTypeImpl(kotlinType) { TODO(kotlinType.render()) }
+
+/*
     val typeConstructor = descriptor.typeConstructor
     val parameters = typeConstructor.parameters
     if (parameters.size != arguments.size) {

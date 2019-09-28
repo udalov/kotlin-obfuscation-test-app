@@ -1,5 +1,6 @@
 package org.jetbrains.kotlin.descriptors
 
+import kotlinx.metadata.ClassName
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.name.ClassId
@@ -7,6 +8,10 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeProjection
 import kotlin.reflect.KVariance
+
+interface ModuleDescriptor {
+    fun findClass(name: ClassName): ClassDescriptor?
+}
 
 interface DeclarationDescriptor : Annotated {
     val name: Name
@@ -25,7 +30,8 @@ interface ValueParameterDescriptor : ParameterDescriptor {
 interface ReceiverParameterDescriptor : ParameterDescriptor
 
 interface CallableMemberDescriptor : DeclarationDescriptor {
-    val containingDeclaration: ClassDescriptor
+    val module: ModuleDescriptor
+    val containingClass: ClassDescriptor?
 
     val dispatchReceiverParameter: ReceiverParameterDescriptor?
     val extensionReceiverParameter: ReceiverParameterDescriptor?
@@ -79,7 +85,11 @@ interface TypeParameterDescriptor : ClassifierDescriptor {
 }
 
 interface TypeAliasDescriptor : ClassifierDescriptor
+
 interface ClassDescriptor : ClassifierDescriptor {
+    val classId: ClassId
+    val module: ModuleDescriptor
+
     val isInterface: Boolean
     val isAnnotationClass: Boolean
     val isObject: Boolean
@@ -107,6 +117,10 @@ interface ClassDescriptor : ClassifierDescriptor {
     val sealedSubclasses: List<ClassDescriptor>
     val memberScope: MemberScope
     val staticScope: MemberScope
+}
+
+interface FileDescriptor {
+    val scope: MemberScope
 }
 
 class MemberScope(
@@ -175,9 +189,6 @@ fun CallableMemberDescriptor.isUnderlyingPropertyOfInlineClass(): Boolean {
     // TODO
     return false
 }
-
-val ClassifierDescriptor?.classId: ClassId?
-    get() = TODO()
 
 val ClassifierDescriptor.parameters: List<TypeParameterDescriptor>
     // TODO
