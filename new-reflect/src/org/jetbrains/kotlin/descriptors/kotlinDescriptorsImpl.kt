@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeProjection
 import kotlin.reflect.KVariance
+import kotlin.reflect.jvm.internal.KotlinReflectionInternalError
 
 class ClassDescriptorImpl(
     private val klass: KmClass,
@@ -17,7 +18,7 @@ class ClassDescriptorImpl(
     override val name: Name
         get() = klass.name.substringAfterLast('.').substringAfterLast('/')
 
-    override val visibility: DescriptorVisibility
+    override val visibility: DescriptorVisibility?
         get() = klass.flags.toVisibility()
 
     override val annotations: Annotations
@@ -63,7 +64,10 @@ class ClassDescriptorImpl(
     override val sealedSubclasses: List<ClassDescriptor>
         get() = emptyList() // TODO
     override val memberScope: MemberScope
-        get() = MemberScope(emptyList(), klass.functions.map { FunctionDescriptorImpl(it, module, this) }) // TODO
+        get() = MemberScope(
+            klass.properties.map { PropertyDescriptorImpl(it, module, this) },
+            klass.functions.map { FunctionDescriptorImpl(it, module, this) }
+        ) // TODO
     override val staticScope: MemberScope
         get() = MemberScope(emptyList(), emptyList()) // TODO
 }
@@ -71,15 +75,15 @@ class ClassDescriptorImpl(
 class FileDescriptorImpl(val file: KmPackage, private val module: ModuleDescriptor) : FileDescriptor {
     override val scope: MemberScope
         get() = MemberScope(
-            emptyList(), // TODO
+            file.properties.map { PropertyDescriptorImpl(it, module, null) },
             file.functions.map { FunctionDescriptorImpl(it, module, null) }
         )
 }
 
-abstract class FunctionDescriptorBase : FunctionDescriptor {
-    abstract val flags: Flags
+abstract class AbstractCallableMemberDescriptor : CallableMemberDescriptor {
+    protected abstract val flags: Flags
 
-    override val visibility: DescriptorVisibility
+    override val visibility: DescriptorVisibility?
         get() = flags.toVisibility()
 
     override val isFinal: Boolean
@@ -90,6 +94,9 @@ abstract class FunctionDescriptorBase : FunctionDescriptor {
         get() = Flag.Common.IS_ABSTRACT(flags)
     override val isExternal: Boolean
         get() = Flag.Function.IS_EXTERNAL(flags)
+}
+
+abstract class AbstractFunctionDescriptor : AbstractCallableMemberDescriptor(), FunctionDescriptor {
     override val isInline: Boolean
         get() = Flag.Function.IS_INLINE(flags)
     override val isOperator: Boolean
@@ -104,7 +111,7 @@ class FunctionDescriptorImpl(
     val function: KmFunction,
     override val module: ModuleDescriptor,
     override val containingClass: ClassDescriptor?
-) : FunctionDescriptorBase() {
+) : AbstractFunctionDescriptor() {
     override val name: Name
         get() = function.name
     override val annotations: Annotations
@@ -135,7 +142,7 @@ class ConstructorDescriptorImpl(
     val constructor: KmConstructor,
     override val module: ModuleDescriptor,
     override val containingClass: ClassDescriptor
-) : FunctionDescriptorBase(), ConstructorDescriptor {
+) : AbstractFunctionDescriptor(), ConstructorDescriptor {
     override val name: Name
         get() = "<init>"
     override val annotations: Annotations
@@ -165,6 +172,117 @@ class ConstructorDescriptorImpl(
 
     override val flags: Flags
         get() = constructor.flags
+}
+
+class PropertyDescriptorImpl(
+    val property: KmProperty,
+    override val module: ModuleDescriptor,
+    override val containingClass: ClassDescriptor?
+) : AbstractCallableMemberDescriptor(), PropertyDescriptor {
+    override val name: Name
+        get() = property.name
+    override val annotations: Annotations
+        get() = Annotations.EMPTY // TODO
+
+    override val dispatchReceiverParameter: ReceiverParameterDescriptor?
+        get() = containingClass?.thisAsReceiverParameter // TODO
+    override val extensionReceiverParameter: ReceiverParameterDescriptor?
+        get() = property.receiverParameterType?.let { ReceiverParameterDescriptorImpl(it.toKotlinType(module)) }
+    override val valueParameters: List<ValueParameterDescriptor>
+        get() = emptyList()
+    override val typeParameters: List<TypeParameterDescriptor>
+        get() = property.typeParameters.map { TypeParameterDescriptorImpl(it, module) }
+    override val returnType: KotlinType
+        get() = property.returnType.toKotlinType(module)
+    override val isReal: Boolean
+        get() = true // TODO
+
+    override fun hasSynthesizedParameterNames(): Boolean = false
+
+    override fun render(): String = TODO()
+
+    override val isVar: Boolean
+        get() = Flag.Property.IS_VAR(flags)
+    override val isLateInit: Boolean
+        get() = Flag.Property.IS_LATEINIT(flags)
+    override val isConst: Boolean
+        get() = Flag.Property.IS_CONST(flags)
+    override val isDelegated: Boolean
+        get() = Flag.Property.IS_DELEGATED(flags)
+    override val getter: PropertyGetterDescriptor? =
+        if (Flag.Property.HAS_GETTER(flags)) PropertyGetterDescriptorImpl(this) else null
+    override val setter: PropertySetterDescriptor? =
+        if (Flag.Property.HAS_SETTER(flags)) PropertySetterDescriptorImpl(this) else null
+    override val flags: Flags
+        get() = property.flags
+}
+
+class PropertyGetterDescriptorImpl(
+    val property: PropertyDescriptorImpl
+) : AbstractFunctionDescriptor(), PropertyGetterDescriptor {
+    override val name: Name
+        get() = TODO() // TODO: shouldn't be called
+    override val annotations: Annotations
+        get() = Annotations.EMPTY // TODO
+
+    override val module: ModuleDescriptor
+        get() = property.module
+    override val containingClass: ClassDescriptor?
+        get() = property.containingClass
+
+    override val dispatchReceiverParameter: ReceiverParameterDescriptor?
+        get() = property.dispatchReceiverParameter
+    override val extensionReceiverParameter: ReceiverParameterDescriptor?
+        get() = property.extensionReceiverParameter
+    override val valueParameters: List<ValueParameterDescriptor>
+        get() = emptyList()
+    override val typeParameters: List<TypeParameterDescriptor>
+        get() = property.typeParameters
+    override val returnType: KotlinType
+        get() = property.returnType
+    override val isReal: Boolean
+        get() = property.isReal
+
+    override fun hasSynthesizedParameterNames(): Boolean = false
+
+    override fun render(): String = TODO()
+
+    override val flags: Flags
+        get() = property.property.getterFlags
+}
+
+class PropertySetterDescriptorImpl(
+    val property: PropertyDescriptorImpl
+) : AbstractFunctionDescriptor(), PropertySetterDescriptor {
+    override val name: Name
+        get() = TODO() // TODO: shouldn't be called
+    override val annotations: Annotations
+        get() = Annotations.EMPTY // TODO
+
+    override val module: ModuleDescriptor
+        get() = property.module
+    override val containingClass: ClassDescriptor?
+        get() = property.containingClass
+
+    override val dispatchReceiverParameter: ReceiverParameterDescriptor?
+        get() = property.dispatchReceiverParameter
+    override val extensionReceiverParameter: ReceiverParameterDescriptor?
+        get() = property.extensionReceiverParameter
+    override val valueParameters: List<ValueParameterDescriptor>
+        get() = TODO() // TODO: shouldn't be called
+    override val typeParameters: List<TypeParameterDescriptor>
+        get() = property.typeParameters
+    override val returnType: KotlinType
+        get() = KotlinBuiltInsImpl.unitType
+    override val isReal: Boolean
+        get() = property.isReal
+
+    override fun hasSynthesizedParameterNames(): Boolean = false
+
+    override fun render(): String = TODO()
+
+    override val flags: Flags
+        get() = property.property.setterFlags
 }
 
 class TypeParameterDescriptorImpl(
@@ -205,6 +323,7 @@ class ValueParameterDescriptorImpl(
 fun KmType.toKotlinType(module: ModuleDescriptor): KotlinType {
     val classifier = classifier.let { classifier ->
         when (classifier) {
+            // TODO: array type has more than just name
             is KmClassifier.Class -> module.findClass(classifier.name) ?: TODO(classifier.name)
             is KmClassifier.TypeParameter -> TODO()
             is KmClassifier.TypeAlias -> TODO()
@@ -231,12 +350,13 @@ private fun KmVariance.toVariance(): KVariance =
         KmVariance.OUT -> KVariance.OUT
     }
 
-private fun Flags.toVisibility(): DescriptorVisibility =
+private fun Flags.toVisibility(): DescriptorVisibility? =
     when {
         Flag.Common.IS_PRIVATE(this) -> DescriptorVisibility.PRIVATE
         Flag.Common.IS_PRIVATE_TO_THIS(this) -> DescriptorVisibility.PRIVATE_TO_THIS
         Flag.Common.IS_INTERNAL(this) -> DescriptorVisibility.INTERNAL
         Flag.Common.IS_PROTECTED(this) -> DescriptorVisibility.PROTECTED
         Flag.Common.IS_PUBLIC(this) -> DescriptorVisibility.PUBLIC
-        else -> TODO()
+        Flag.Common.IS_LOCAL(this) -> null
+        else -> throw KotlinReflectionInternalError("Declaration with unknown visibility")
     }

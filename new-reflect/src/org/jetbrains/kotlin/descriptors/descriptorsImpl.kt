@@ -1,6 +1,7 @@
 package org.jetbrains.kotlin.descriptors
 
 import kotlinx.metadata.ClassName
+import kotlinx.metadata.common.KotlinCommonMetadata
 import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
 import org.jetbrains.kotlin.builtins.JavaToKotlinClassMap
@@ -31,9 +32,13 @@ class ModuleDescriptorImpl(val classLoader: ClassLoader) : ModuleDescriptor {
             val packageName = builtinClassId.packageFqName
             // kotlin.collections -> kotlin/collections/collections.kotlin_builtins
             val resourcePath = packageName.asString().replace('.', '/') + '/' + packageName.shortName() + ".kotlin_builtins"
-            Unit::class.java.classLoader.getResourceAsStream(resourcePath).use { input ->
-                TODO()
-            }
+            val bytes = Unit::class.java.classLoader.getResourceAsStream(resourcePath)?.readBytes()
+                ?: error("No builtins metadata file found: $resourcePath") // TODO: return null
+            val packageFragment = KotlinCommonMetadata.read(bytes)?.toKmModuleFragment()
+                ?: error("Incompatible metadata version: $resourcePath") // TODO
+            val kmClass = packageFragment.classes.find { it.name == builtinClassId.asClassName() }
+                ?: error("Built-in class not found: $builtinClassId in $resourcePath")
+            return ClassDescriptorImpl(kmClass, this, builtinClassId)
         }
 
         jClass.readHeader()?.let { header ->

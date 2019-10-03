@@ -238,7 +238,7 @@ internal class KClassImpl<T : Any>(
     override val sealedSubclasses: List<KClass<out T>> get() = data().sealedSubclasses
 
     override val visibility: KVisibility?
-        get() = descriptor.visibility.toKVisibility()
+        get() = descriptor.visibility?.toKVisibility()
 
     override val isFinal: Boolean
         get() = descriptor.isFinal

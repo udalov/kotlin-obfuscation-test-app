@@ -87,7 +87,7 @@ internal abstract class KCallableImpl<out R> : KCallable<R>, KTypeParameterOwner
         get() = _typeParameters()
 
     override val visibility: KVisibility?
-        get() = descriptor.visibility.toKVisibility()
+        get() = descriptor.visibility?.toKVisibility()
 
     override val isFinal: Boolean
         get() = descriptor.isFinal

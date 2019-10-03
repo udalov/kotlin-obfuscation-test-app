@@ -1,10 +1,18 @@
 package org.jetbrains.kotlin.builtins
 
-enum class JvmPrimitiveType(val primitiveType: PrimitiveType, val javaKeywordName: String) {
-    BOOLEAN(PrimitiveType.BOOLEAN, "boolean"), CHAR(PrimitiveType.CHAR, "char"),
-    BYTE(PrimitiveType.BYTE, "byte"), SHORT(PrimitiveType.SHORT, "short"), INT(PrimitiveType.INT, "int"),
-    FLOAT(PrimitiveType.FLOAT, "float"), LONG(PrimitiveType.LONG, "long"),
-    DOUBLE(PrimitiveType.DOUBLE, "double");
+import org.jetbrains.kotlin.name.FqName
+
+enum class JvmPrimitiveType(val primitiveType: PrimitiveType, val javaKeywordName: String, wrapperClassName: String) {
+    BOOLEAN(PrimitiveType.BOOLEAN, "boolean", "Boolean"),
+    CHAR(PrimitiveType.CHAR, "char", "Character"),
+    BYTE(PrimitiveType.BYTE, "byte", "Byte"),
+    SHORT(PrimitiveType.SHORT, "short", "Short"),
+    INT(PrimitiveType.INT, "int", "Integer"),
+    FLOAT(PrimitiveType.FLOAT, "float", "Float"),
+    LONG(PrimitiveType.LONG, "long", "Long"),
+    DOUBLE(PrimitiveType.DOUBLE, "double", "Double");
+
+    val wrapperFqName = FqName("java.lang.$wrapperClassName")
 
     companion object {
         private val TYPE_BY_NAME: MutableMap<String, JvmPrimitiveType> =

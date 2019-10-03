@@ -16,10 +16,9 @@ import kotlin.reflect.KFunction
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.IllegalPropertyDelegateAccessException
-import kotlin.reflect.jvm.internal.calls.Caller
+import kotlin.reflect.jvm.internal.JvmPropertySignature.*
+import kotlin.reflect.jvm.internal.calls.*
 import kotlin.reflect.jvm.internal.calls.CallerImpl
-import kotlin.reflect.jvm.internal.calls.ThrowingCaller
-import kotlin.reflect.jvm.internal.calls.coerceToExpectedReceiverType
 
 internal abstract class KPropertyImpl<out V> private constructor(
     override val container: KDeclarationContainerImpl,
@@ -226,30 +225,21 @@ private fun KPropertyImpl.Accessor<*, *>.computeCallerForAccessor(isGetter: Bool
             else CallerImpl.FieldSetter.Static(field, isNotNullProperty())
     }
 
-    /*
     val jvmSignature = RuntimeTypeMapper.mapPropertySignature(property.descriptor)
     return when (jvmSignature) {
         is KotlinProperty -> {
-            val accessorSignature = jvmSignature.signature.run {
-                when {
-                    isGetter -> if (hasGetter()) getter else null
-                    else -> if (hasSetter()) setter else null
-                }
-            }
+            val accessorSignature = if (isGetter) jvmSignature.getterSignature else jvmSignature.setterSignature
 
             val accessor = accessorSignature?.let { signature ->
-                property.container.findMethodBySignature(
-                    jvmSignature.nameResolver.getString(signature.name),
-                    jvmSignature.nameResolver.getString(signature.desc)
-                )
+                property.container.findMethodBySignature(signature.name, signature.desc)
             }
 
             when {
                 accessor == null -> {
                     if (property.descriptor.isUnderlyingPropertyOfInlineClass() &&
-                        property.descriptor.visibility == DescriptorVisibilities.INTERNAL
+                        property.descriptor.visibility == DescriptorVisibility.INTERNAL
                     ) {
-                        val unboxMethod = property.descriptor.containingDeclaration.toInlineClass()?.getUnboxMethod(property.descriptor)
+                        val unboxMethod = property.descriptor.containingClass?.toInlineClass()?.getUnboxMethod(property.descriptor)
                             ?: throw KotlinReflectionInternalError("Underlying property of inline class $property should have a field")
                         if (isBound) InternalUnderlyingValOfInlineClass.Bound(unboxMethod, boundReceiver)
                         else InternalUnderlyingValOfInlineClass.Unbound(unboxMethod)
@@ -295,8 +285,6 @@ private fun KPropertyImpl.Accessor<*, *>.computeCallerForAccessor(isGetter: Bool
             else CallerImpl.Method.Instance(accessor)
         }
     }.createInlineClassAwareCallerIfNeeded(descriptor)
-    */
-    TODO()
 }
 
 private fun PropertyDescriptor.isJvmFieldPropertyInCompanionObject(): Boolean {

@@ -1,5 +1,7 @@
 package org.jetbrains.kotlin.name
 
+import kotlinx.metadata.ClassName
+
 typealias Name = String
 
 data class FqName(val fqName: String) {
@@ -34,6 +36,11 @@ data class ClassId(val packageFqName: FqName, val relativeClassName: FqName, val
     private fun asString(): String {
         return if (packageFqName.isRoot) relativeClassName.asString()
         else packageFqName.asString().replace('.', '/') + "/" + relativeClassName.asString()
+    }
+
+    fun asClassName(): ClassName {
+        if (isLocal) TODO(asString())
+        return asString()
     }
 
     override fun toString(): String = if (packageFqName.isRoot) "/" + asString() else asString()

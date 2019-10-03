@@ -16,24 +16,18 @@
 
 package kotlin.reflect.jvm.internal
 
-import kotlinx.metadata.jvm.JvmMethodSignature
-import kotlinx.metadata.jvm.signature
-import org.jetbrains.kotlin.builtins.JavaToKotlinClassMap
-import org.jetbrains.kotlin.builtins.JvmPrimitiveType
-import org.jetbrains.kotlin.builtins.PrimitiveType
-import org.jetbrains.kotlin.builtins.StandardNames
-import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptorImpl
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import kotlinx.metadata.jvm.*
+import org.jetbrains.kotlin.builtins.*
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.misc.classId
 import org.jetbrains.kotlin.misc.desc
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import java.lang.reflect.Constructor
+import java.lang.reflect.Field
 import java.lang.reflect.Method
 
-internal sealed class JvmFunctionSignature {
+sealed class JvmFunctionSignature {
     abstract fun asString(): String
 
     class KotlinFunction(val signature: JvmMethodSignature) : JvmFunctionSignature() {
@@ -71,8 +65,63 @@ internal sealed class JvmFunctionSignature {
     }
 }
 
-data class JvmPropertySignature(val signature: String) {
-    fun asString(): String = signature
+sealed class JvmPropertySignature {
+    /**
+     * Returns the JVM signature of the getter of this property. In case the property doesn't have a getter,
+     * constructs the signature of its imaginary default getter. See CallableReference#getSignature for more information
+     */
+    abstract fun asString(): String
+
+    class KotlinProperty(
+        private val descriptor: PropertyDescriptorImpl,
+        val fieldSignature: JvmFieldSignature?,
+        val getterSignature: JvmMethodSignature?,
+        val setterSignature: JvmMethodSignature?
+    ) : JvmPropertySignature() {
+        private val string: String = getterSignature?.asString() ?: run {
+            val (name, desc) = fieldSignature ?: throw KotlinReflectionInternalError("No field signature for property: $descriptor")
+            JvmAbi.getterName(name) + getManglingSuffix() + "()" + desc
+        }
+
+        private fun getManglingSuffix(): String {
+            // TODO
+/*
+            val containingDeclaration = descriptor.containingDeclaration
+            if (descriptor.visibility == Visibilities.INTERNAL && containingDeclaration is DeserializedClassDescriptor) {
+                val classProto = containingDeclaration.classProto
+                val moduleName = classProto.getExtensionOrNull(JvmProtoBuf.classModuleName)?.let(nameResolver::getString)
+                    ?: JvmProtoBufUtil.DEFAULT_MODULE_NAME
+                return "$" + NameUtils.sanitizeAsJavaIdentifier(moduleName)
+            }
+            if (descriptor.visibility == Visibilities.PRIVATE && containingDeclaration is PackageFragmentDescriptor) {
+                val packagePartSource = (descriptor as DeserializedPropertyDescriptor).containerSource
+                if (packagePartSource is JvmPackagePartSource && packagePartSource.facadeClassName != null) {
+                    return "$" + packagePartSource.simpleName.asString()
+                }
+            }
+*/
+
+            return ""
+        }
+
+        override fun asString(): String = string
+    }
+
+    class JavaMethodProperty(val getterMethod: Method, val setterMethod: Method?) : JvmPropertySignature() {
+        override fun asString(): String = getterMethod.signature
+    }
+
+    class JavaField(val field: Field) : JvmPropertySignature() {
+        override fun asString(): String =
+            JvmAbi.getterName(field.name) + "()" + field.type.desc
+    }
+
+    class MappedKotlinProperty(
+        val getterSignature: JvmFunctionSignature.KotlinFunction,
+        val setterSignature: JvmFunctionSignature.KotlinFunction?
+    ) : JvmPropertySignature() {
+        override fun asString(): String = getterSignature.asString()
+    }
 }
 
 private val Method.signature: String
@@ -91,8 +140,16 @@ internal object RuntimeTypeMapper {
             // return mapJvmFunctionSignature(function)
         }
 
+        // TODO: AbstractFunctionDescriptor.signature
+
         if (function is FunctionDescriptorImpl) {
             return JvmFunctionSignature.KotlinFunction(function.function.signature ?: error("No signature for ${function.render()}"))
+        }
+        if (function is PropertyGetterDescriptorImpl) {
+            return JvmFunctionSignature.KotlinFunction(function.property.property.getterSignature ?: error("No getter signature for ${function.render()}"))
+        }
+        if (function is PropertySetterDescriptorImpl) {
+            return JvmFunctionSignature.KotlinFunction(function.property.property.setterSignature ?: error("No setter signature for ${function.render()}"))
         }
 
         // throw KotlinReflectionInternalError("Unknown origin of $function (${function.javaClass})")
@@ -101,6 +158,17 @@ internal object RuntimeTypeMapper {
     }
 
     fun mapPropertySignature(possiblyOverriddenProperty: PropertyDescriptor): JvmPropertySignature {
+        val property = possiblyOverriddenProperty
+
+        if (property is PropertyDescriptorImpl) {
+            return JvmPropertySignature.KotlinProperty(
+                property,
+                property.property.fieldSignature,
+                property.property.getterSignature,
+                property.property.setterSignature
+            )
+        }
+
         TODO()
     }
 

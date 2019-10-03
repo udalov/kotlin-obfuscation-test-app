@@ -10,4 +10,8 @@ enum class PrimitiveType(val typeName: Name) {
 
     val typeFqName: FqName = StandardNames.BUILT_INS_PACKAGE_FQ_NAME.child(typeName)
     val arrayTypeFqName: FqName = StandardNames.BUILT_INS_PACKAGE_FQ_NAME.child(arrayTypeName)
+
+    companion object {
+        val NUMBER_TYPES = setOf(CHAR, BYTE, SHORT, INT, FLOAT, LONG, DOUBLE)
+    }
 }

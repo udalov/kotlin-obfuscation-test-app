@@ -44,7 +44,7 @@ interface CallableMemberDescriptor : DeclarationDescriptor {
     val isOpen: Boolean
     val isAbstract: Boolean
     val isExternal: Boolean
-    val visibility: DescriptorVisibility
+    val visibility: DescriptorVisibility?
 
     val isReal: Boolean
     fun hasSynthesizedParameterNames(): Boolean
@@ -98,7 +98,7 @@ interface ClassDescriptor : ClassifierDescriptor {
     val isOpen: Boolean
     val isAbstract: Boolean
     val isSealed: Boolean
-    val visibility: DescriptorVisibility
+    val visibility: DescriptorVisibility?
 
     val isData: Boolean
     val isInner: Boolean

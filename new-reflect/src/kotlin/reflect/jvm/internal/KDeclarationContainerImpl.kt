@@ -81,7 +81,7 @@ internal abstract class KDeclarationContainerImpl : ClassBasedDeclarationContain
             // TODO: consider writing additional info (besides signature) to property reference objects to distinguish them in this case
 
             val mostVisibleProperties = properties
-                .groupBy { it.visibility }
+                .groupBy { it.visibility!! }
                 .toSortedMap(Comparator { first, second ->
                     DescriptorVisibilities.compare(first, second) ?: 0
                 }).values.last()
