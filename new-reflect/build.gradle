@@ -5,12 +5,17 @@ plugins {
 
 repositories {
     mavenCentral()
+    maven {
+        url "../kotlin-build-repo"
+    }
 }
 
 dependencies {
     api "org.jetbrains.kotlin:kotlin-stdlib"
     implementation "org.jetbrains.kotlin:kotlin-test"
-    implementation "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.1.0"
+    implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.0.123") {
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
+    }
 
     project ":new-reflect"
 }
@@ -25,6 +30,6 @@ sourceSets {
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     kotlinOptions {
-        freeCompilerArgs += ["-Xallow-kotlin-package"]
+        freeCompilerArgs += ["-Xallow-kotlin-package", "-Xskip-prerelease-check"]
     }
 }
