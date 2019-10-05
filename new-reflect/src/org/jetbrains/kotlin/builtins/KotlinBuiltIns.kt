@@ -56,7 +56,4 @@ object KotlinBuiltIns {
 
 object KotlinBuiltInsImpl {
     val anyType: KotlinType = TODO()
-    val unitType: KotlinType = Unit::class.java.let { klass ->
-        ModuleDescriptorImpl(klass.classLoader).findClass("kotlin/Unit")!!.defaultType // TODO
-    }
 }

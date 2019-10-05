@@ -13,7 +13,8 @@ import kotlin.reflect.jvm.internal.KotlinReflectionInternalError
 class ClassDescriptorImpl(
     private val klass: KmClass,
     override val module: ModuleDescriptor,
-    override val classId: ClassId
+    override val classId: ClassId,
+    override val jClass: Class<*>
 ) : ClassDescriptor {
     override val name: Name
         get() = klass.name.substringAfterLast('.').substringAfterLast('/')
@@ -268,12 +269,12 @@ class PropertySetterDescriptorImpl(
         get() = property.dispatchReceiverParameter
     override val extensionReceiverParameter: ReceiverParameterDescriptor?
         get() = property.extensionReceiverParameter
-    override val valueParameters: List<ValueParameterDescriptor>
-        get() = TODO() // TODO: shouldn't be called
+    override val valueParameters: List<ValueParameterDescriptor> =
+        listOf(PropertySetterParameterDescriptor(this))
     override val typeParameters: List<TypeParameterDescriptor>
         get() = property.typeParameters
     override val returnType: KotlinType
-        get() = KotlinBuiltInsImpl.unitType
+        get() = module.findClass("kotlin/Unit")!!.defaultType // TODO: use stdlib module?
     override val isReal: Boolean
         get() = property.isReal
 
@@ -317,6 +318,22 @@ class ValueParameterDescriptorImpl(
         get() = Flag.ValueParameter.DECLARES_DEFAULT_VALUE(valueParameter.flags)
     override val varargElementType: KotlinType?
         get() = valueParameter.varargElementType?.toKotlinType(containingDeclaration.module)
+}
+
+class PropertySetterParameterDescriptor(private val setter: PropertySetterDescriptorImpl) : ValueParameterDescriptor {
+    override val name: Name
+        get() = "<set-?>"
+    override val annotations: Annotations
+        get() = TODO()
+
+    override val containingDeclaration: CallableMemberDescriptor
+        get() = setter
+    override val type: KotlinType
+        get() = setter.property.returnType
+    override val declaresDefaultValue: Boolean
+        get() = false
+    override val varargElementType: KotlinType?
+        get() = null
 }
 
 // TODO

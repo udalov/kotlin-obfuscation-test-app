@@ -89,6 +89,7 @@ interface TypeAliasDescriptor : ClassifierDescriptor
 interface ClassDescriptor : ClassifierDescriptor {
     val classId: ClassId
     val module: ModuleDescriptor
+    val jClass: Class<*>
 
     val isInterface: Boolean
     val isAnnotationClass: Boolean

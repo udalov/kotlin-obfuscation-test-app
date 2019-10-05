@@ -38,12 +38,12 @@ class ModuleDescriptorImpl(val classLoader: ClassLoader) : ModuleDescriptor {
                 ?: error("Incompatible metadata version: $resourcePath") // TODO
             val kmClass = packageFragment.classes.find { it.name == builtinClassId.asClassName() }
                 ?: error("Built-in class not found: $builtinClassId in $resourcePath")
-            return ClassDescriptorImpl(kmClass, this, builtinClassId)
+            return ClassDescriptorImpl(kmClass, this, builtinClassId, jClass)
         }
 
         jClass.readHeader()?.let { header ->
             val kmClass = (KotlinClassMetadata.read(header) as/*TODO*/ KotlinClassMetadata.Class).toKmClass()
-            return ClassDescriptorImpl(kmClass, this, jClass.classId)
+            return ClassDescriptorImpl(kmClass, this, jClass.classId, jClass)
         }
 
         TODO(jClass.name)

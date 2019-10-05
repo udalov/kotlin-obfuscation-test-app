@@ -145,6 +145,9 @@ internal object RuntimeTypeMapper {
         if (function is FunctionDescriptorImpl) {
             return JvmFunctionSignature.KotlinFunction(function.function.signature ?: error("No signature for ${function.render()}"))
         }
+        if (function is ConstructorDescriptorImpl) {
+            return JvmFunctionSignature.KotlinConstructor(function.constructor.signature ?: error("No constructor signature for ${function.render()}"))
+        }
         if (function is PropertyGetterDescriptorImpl) {
             return JvmFunctionSignature.KotlinFunction(function.property.property.getterSignature ?: error("No getter signature for ${function.render()}"))
         }

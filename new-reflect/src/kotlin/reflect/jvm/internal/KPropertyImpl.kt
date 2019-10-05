@@ -45,24 +45,18 @@ internal abstract class KPropertyImpl<out V> private constructor(
     override val isBound: Boolean get() = rawBoundReceiver != CallableReference.NO_RECEIVER
 
     private val _javaField: ReflectProperties.LazyVal<Field?> = ReflectProperties.lazy {
-        // TODO
-/*
         val jvmSignature = RuntimeTypeMapper.mapPropertySignature(descriptor)
         when (jvmSignature) {
             is KotlinProperty -> {
-                val descriptor = jvmSignature.descriptor
-                JvmProtoBufUtil.getJvmFieldSignature(jvmSignature.proto, jvmSignature.nameResolver, jvmSignature.typeTable)?.let {
-                    val owner = if (DescriptorsJvmAbiUtil.isPropertyWithBackingFieldInOuterClass(descriptor) ||
-                        JvmProtoBufUtil.isMovedFromInterfaceCompanion(jvmSignature.proto)
+                jvmSignature.fieldSignature?.let {
+                    val owner = if (false /* TODO: DescriptorsJvmAbiUtil.isPropertyWithBackingFieldInOuterClass(descriptor) ||
+                        JvmProtoBufUtil.isMovedFromInterfaceCompanion(jvmSignature.proto) */
                     ) {
                         container.jClass.enclosingClass
-                    } else descriptor.containingDeclaration.let { containingDeclaration ->
-                        if (containingDeclaration is ClassDescriptor) containingDeclaration.toJavaClass()
-                        else container.jClass
-                    }
+                    } else descriptor.containingClass?.jClass ?: container.jClass
 
                     try {
-                        owner?.getDeclaredField(it.name)
+                        owner.getDeclaredField(it.name)
                     } catch (e: NoSuchFieldException) {
                         null
                     }
@@ -72,8 +66,6 @@ internal abstract class KPropertyImpl<out V> private constructor(
             is JavaMethodProperty -> null
             is MappedKotlinProperty -> null
         }
-*/
-        null
     }
 
     val javaField: Field? get() = _javaField()

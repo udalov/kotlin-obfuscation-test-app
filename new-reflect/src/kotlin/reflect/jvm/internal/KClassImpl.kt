@@ -197,6 +197,7 @@ internal class KClassImpl<T : Any>(
             }
         }
 
+        // TODO
 /*
         return (descriptor as? DeserializedClassDescriptor)?.let { descriptor ->
             descriptor.classProto.getExtensionOrNull(JvmProtoBuf.classLocalVariable, index)?.let { proto ->
