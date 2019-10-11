@@ -50,12 +50,17 @@ class ClassDescriptorImpl(
     override val isFun: Boolean
         get() = Flag.Class.IS_FUN(klass.flags)
 
-    override val declaredTypeParameters: List<TypeParameterDescriptor>
-        get() = klass.typeParameters.map { TypeParameterDescriptorImpl(it, module) }
+    // TODO: cache descriptor instances
+
+    internal val typeParameterTable: TypeParameterTable =
+        klass.typeParameters.toTypeParameters(module, containingClass?.typeParameterTable)
+
+    override val declaredTypeParameters: List<TypeParameterDescriptorImpl>
+        get() = typeParameterTable.typeParameters
     override val supertypes: List<KotlinType>
-        get() = klass.supertypes.map { it.toKotlinType(module) }
-    override val containingClass: ClassDescriptor?
-        get() = null // TODO
+        get() = klass.supertypes.map { it.toKotlinType(module, typeParameterTable) }
+    override val containingClass: ClassDescriptorImpl?
+        get() = classId.getOuterClassId()?.let { module.findClass(it.asClassName()) as ClassDescriptorImpl? }
     override val thisAsReceiverParameter: ReceiverParameterDescriptor =
         ReceiverParameterDescriptorImpl(defaultType)
     override val constructors: List<ConstructorDescriptor>
@@ -73,6 +78,13 @@ class ClassDescriptorImpl(
         get() = MemberScope(emptyList(), emptyList()) // TODO
 }
 
+private fun List<KmTypeParameter>.toTypeParameters(module: ModuleDescriptor, parent: TypeParameterTable?): TypeParameterTable {
+    val list = ArrayList<TypeParameterDescriptorImpl>(size)
+    return TypeParameterTable(list, parent).also { table ->
+        mapTo(list) { TypeParameterDescriptorImpl(it, module, table) }
+    }
+}
+
 class FileDescriptorImpl(val file: KmPackage, private val module: ModuleDescriptor) : FileDescriptor {
     override val scope: MemberScope
         get() = MemberScope(
@@ -83,6 +95,8 @@ class FileDescriptorImpl(val file: KmPackage, private val module: ModuleDescript
 
 abstract class AbstractCallableMemberDescriptor : CallableMemberDescriptor {
     protected abstract val flags: Flags
+
+    internal abstract val typeParameterTable: TypeParameterTable
 
     override val visibility: DescriptorVisibility?
         get() = flags.toVisibility()
@@ -111,23 +125,28 @@ abstract class AbstractFunctionDescriptor : AbstractCallableMemberDescriptor(), 
 class FunctionDescriptorImpl(
     val function: KmFunction,
     override val module: ModuleDescriptor,
-    override val containingClass: ClassDescriptor?
+    override val containingClass: ClassDescriptorImpl?
 ) : AbstractFunctionDescriptor() {
     override val name: Name
         get() = function.name
     override val annotations: Annotations
         get() = Annotations.EMPTY // TODO
 
+    override val typeParameterTable: TypeParameterTable =
+        function.typeParameters.toTypeParameters(module, containingClass?.typeParameterTable)
+
     override val dispatchReceiverParameter: ReceiverParameterDescriptor?
         get() = containingClass?.thisAsReceiverParameter // TODO
     override val extensionReceiverParameter: ReceiverParameterDescriptor?
-        get() = function.receiverParameterType?.let { ReceiverParameterDescriptorImpl(it.toKotlinType(module)) }
+        get() = function.receiverParameterType?.let {
+            ReceiverParameterDescriptorImpl(it.toKotlinType(module, typeParameterTable))
+        }
     override val valueParameters: List<ValueParameterDescriptor>
         get() = function.valueParameters.map { ValueParameterDescriptorImpl(it, this) }
-    override val typeParameters: List<TypeParameterDescriptor>
-        get() = function.typeParameters.map { TypeParameterDescriptorImpl(it, module) }
+    override val typeParameters: List<TypeParameterDescriptorImpl>
+        get() = typeParameterTable.typeParameters
     override val returnType: KotlinType
-        get() = function.returnType.toKotlinType(module)
+        get() = function.returnType.toKotlinType(module, typeParameterTable)
     override val isReal: Boolean
         get() = true // TODO
 
@@ -142,12 +161,15 @@ class FunctionDescriptorImpl(
 class ConstructorDescriptorImpl(
     val constructor: KmConstructor,
     override val module: ModuleDescriptor,
-    override val containingClass: ClassDescriptor
+    override val containingClass: ClassDescriptorImpl
 ) : AbstractFunctionDescriptor(), ConstructorDescriptor {
     override val name: Name
         get() = "<init>"
     override val annotations: Annotations
         get() = Annotations.EMPTY // TODO
+
+    override val typeParameterTable: TypeParameterTable =
+        emptyList<KmTypeParameter>().toTypeParameters(module, containingClass.typeParameterTable)
 
     override val dispatchReceiverParameter: ReceiverParameterDescriptor
         get() = containingClass.thisAsReceiverParameter // TODO
@@ -178,23 +200,26 @@ class ConstructorDescriptorImpl(
 class PropertyDescriptorImpl(
     val property: KmProperty,
     override val module: ModuleDescriptor,
-    override val containingClass: ClassDescriptor?
+    override val containingClass: ClassDescriptorImpl?
 ) : AbstractCallableMemberDescriptor(), PropertyDescriptor {
     override val name: Name
         get() = property.name
     override val annotations: Annotations
         get() = Annotations.EMPTY // TODO
 
+    override val typeParameterTable: TypeParameterTable =
+        property.typeParameters.toTypeParameters(module, containingClass?.typeParameterTable)
+
     override val dispatchReceiverParameter: ReceiverParameterDescriptor?
         get() = containingClass?.thisAsReceiverParameter // TODO
     override val extensionReceiverParameter: ReceiverParameterDescriptor?
-        get() = property.receiverParameterType?.let { ReceiverParameterDescriptorImpl(it.toKotlinType(module)) }
+        get() = property.receiverParameterType?.let { ReceiverParameterDescriptorImpl(it.toKotlinType(module, typeParameterTable)) }
     override val valueParameters: List<ValueParameterDescriptor>
         get() = emptyList()
-    override val typeParameters: List<TypeParameterDescriptor>
-        get() = property.typeParameters.map { TypeParameterDescriptorImpl(it, module) }
+    override val typeParameters: List<TypeParameterDescriptorImpl>
+        get() = typeParameterTable.typeParameters
     override val returnType: KotlinType
-        get() = property.returnType.toKotlinType(module)
+        get() = property.returnType.toKotlinType(module, typeParameterTable)
     override val isReal: Boolean
         get() = true // TODO
 
@@ -228,8 +253,11 @@ class PropertyGetterDescriptorImpl(
 
     override val module: ModuleDescriptor
         get() = property.module
-    override val containingClass: ClassDescriptor?
+    override val containingClass: ClassDescriptorImpl?
         get() = property.containingClass
+
+    override val typeParameterTable: TypeParameterTable
+        get() = property.typeParameterTable
 
     override val dispatchReceiverParameter: ReceiverParameterDescriptor?
         get() = property.dispatchReceiverParameter
@@ -262,8 +290,11 @@ class PropertySetterDescriptorImpl(
 
     override val module: ModuleDescriptor
         get() = property.module
-    override val containingClass: ClassDescriptor?
+    override val containingClass: ClassDescriptorImpl?
         get() = property.containingClass
+
+    override val typeParameterTable: TypeParameterTable
+        get() = property.typeParameterTable
 
     override val dispatchReceiverParameter: ReceiverParameterDescriptor?
         get() = property.dispatchReceiverParameter
@@ -288,15 +319,18 @@ class PropertySetterDescriptorImpl(
 
 class TypeParameterDescriptorImpl(
     private val typeParameter: KmTypeParameter,
-    private val module: ModuleDescriptor
+    private val module: ModuleDescriptor,
+    private val typeParameterTable: TypeParameterTable
 ) : TypeParameterDescriptor {
+    internal val id: Int get() = typeParameter.id
+
     override val name: Name
         get() = typeParameter.name
     override val annotations: Annotations
         get() = TODO() // typeParameter.annotations
 
     override val upperBounds: List<KotlinType>
-        get() = typeParameter.upperBounds.map { it.toKotlinType(module) }
+        get() = typeParameter.upperBounds.map { it.toKotlinType(module, typeParameterTable) }
     override val variance: KVariance
         get() = typeParameter.variance.toVariance()
     override val isReified: Boolean
@@ -305,7 +339,7 @@ class TypeParameterDescriptorImpl(
 
 class ValueParameterDescriptorImpl(
     private val valueParameter: KmValueParameter,
-    override val containingDeclaration: CallableMemberDescriptor
+    override val containingDeclaration: AbstractCallableMemberDescriptor
 ) : ValueParameterDescriptor {
     override val name: Name
         get() = valueParameter.name
@@ -313,11 +347,12 @@ class ValueParameterDescriptorImpl(
         get() = TODO()
 
     override val type: KotlinType
-        get() = valueParameter.type!!.toKotlinType(containingDeclaration.module) // TODO: fix nullability in kotlinx-metadata
+        // TODO: fix nullability in kotlinx-metadata
+        get() = valueParameter.type!!.toKotlinType(containingDeclaration.module, containingDeclaration.typeParameterTable)
     override val declaresDefaultValue: Boolean
         get() = Flag.ValueParameter.DECLARES_DEFAULT_VALUE(valueParameter.flags)
     override val varargElementType: KotlinType?
-        get() = valueParameter.varargElementType?.toKotlinType(containingDeclaration.module)
+        get() = valueParameter.varargElementType?.toKotlinType(containingDeclaration.module, containingDeclaration.typeParameterTable)
 }
 
 class PropertySetterParameterDescriptor(private val setter: PropertySetterDescriptorImpl) : ValueParameterDescriptor {
@@ -337,12 +372,12 @@ class PropertySetterParameterDescriptor(private val setter: PropertySetterDescri
 }
 
 // TODO
-fun KmType.toKotlinType(module: ModuleDescriptor): KotlinType {
+private fun KmType.toKotlinType(module: ModuleDescriptor, typeParameterTable: TypeParameterTable): KotlinType {
     val classifier = classifier.let { classifier ->
         when (classifier) {
             // TODO: array type has more than just name
             is KmClassifier.Class -> module.findClass(classifier.name) ?: TODO(classifier.name)
-            is KmClassifier.TypeParameter -> TODO()
+            is KmClassifier.TypeParameter -> typeParameterTable.get(classifier.id)
             is KmClassifier.TypeAlias -> TODO()
         }
     }
@@ -350,7 +385,7 @@ fun KmType.toKotlinType(module: ModuleDescriptor): KotlinType {
         classifier,
         arguments.map { (variance, type) ->
             TypeProjection(
-                type?.toKotlinType(module) ?: KotlinBuiltInsImpl.anyType,
+                type?.toKotlinType(module, typeParameterTable) ?: KotlinBuiltInsImpl.anyType,
                 variance == null,
                 variance?.toVariance() ?: KVariance.OUT /* TODO: verify */
             )
@@ -358,6 +393,22 @@ fun KmType.toKotlinType(module: ModuleDescriptor): KotlinType {
         Flag.Type.IS_NULLABLE(flags),
         Annotations.EMPTY // TODO
     )
+}
+
+class TypeParameterTable(
+    val typeParameters: List<TypeParameterDescriptorImpl>,
+    private val parent: TypeParameterTable? = null
+) {
+    private fun getOrNull(id: Int): TypeParameterDescriptor? =
+        typeParameters.find { it.id == id } ?: parent?.getOrNull(id)
+
+    fun get(id: Int): TypeParameterDescriptor =
+        getOrNull(id) ?: throw KotlinReflectionInternalError("Unknown type parameter with id=$id")
+
+    companion object {
+        @JvmField
+        val EMPTY = TypeParameterTable(emptyList())
+    }
 }
 
 private fun KmVariance.toVariance(): KVariance =

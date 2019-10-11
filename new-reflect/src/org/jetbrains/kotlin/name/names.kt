@@ -8,8 +8,7 @@ data class FqName(val fqName: String) {
     val isRoot: Boolean get() = fqName.isEmpty()
 
     fun parent(): FqName = fqName.lastIndexOf('.').let { i ->
-        check(i >= 0)
-        FqName(fqName.substring(0, i))
+        if (i >= 0) FqName(fqName.substring(0, i)) else EMPTY
     }
 
     fun child(name: Name): FqName = FqName("$fqName.$name")
@@ -19,6 +18,11 @@ data class FqName(val fqName: String) {
     fun asString(): String = fqName
 
     override fun toString(): String = fqName
+
+    companion object {
+        @JvmField
+        val EMPTY = FqName("")
+    }
 }
 
 data class ClassId(val packageFqName: FqName, val relativeClassName: FqName, val isLocal: Boolean = false) {
@@ -32,6 +36,11 @@ data class ClassId(val packageFqName: FqName, val relativeClassName: FqName, val
 
     fun createNestedClassId(name: Name): ClassId =
         ClassId(packageFqName, relativeClassName.child(name), isLocal)
+
+    fun getOuterClassId(): ClassId? =
+        relativeClassName.parent().let {
+            if (it.isRoot) null else ClassId(packageFqName, it, isLocal)
+        }
 
     private fun asString(): String {
         return if (packageFqName.isRoot) relativeClassName.asString()

@@ -15,7 +15,7 @@ import org.jetbrains.kotlin.types.KotlinType
 class ModuleDescriptorImpl(val classLoader: ClassLoader) : ModuleDescriptor {
     override fun findClass(name: ClassName): ClassDescriptor? {
         // TODO: verify
-        return findClass(FqName(name.replace('/', '.')))
+        return findClass(FqName(name.replace('.', '$').replace('/', '.')))
     }
 
     fun findClass(kotlinFqName: FqName): ClassDescriptor? {
