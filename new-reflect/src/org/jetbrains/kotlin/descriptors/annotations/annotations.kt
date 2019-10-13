@@ -6,11 +6,11 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.KotlinType
 
-interface Annotated {
+internal interface Annotated {
     val annotations: Annotations
 }
 
-interface Annotations : Iterable<AnnotationDescriptor> {
+internal interface Annotations : Iterable<AnnotationDescriptor> {
     fun findAnnotation(fqName: FqName): AnnotationDescriptor?
 
     object Empty : Annotations {
@@ -23,22 +23,22 @@ interface Annotations : Iterable<AnnotationDescriptor> {
     }
 }
 
-interface AnnotationDescriptor {
+internal interface AnnotationDescriptor {
     val annotationClass: ClassDescriptor
     val allValueArguments: Map<Name, ConstantValue<*>>
 }
 
-fun Annotations.hasAnnotation(fqName: FqName): Boolean =
+internal fun Annotations.hasAnnotation(fqName: FqName): Boolean =
     findAnnotation(fqName) != null
 
-abstract class ConstantValue<out T>(open val value: T)
-class AnnotationValue(value: AnnotationDescriptor) : ConstantValue<AnnotationDescriptor>(value)
-class ArrayValue(value: List<ConstantValue<*>>) : ConstantValue<List<ConstantValue<*>>>(value)
-class EnumValue(val enumClassId: ClassId, val enumEntryName: Name) : ConstantValue<Pair<ClassId, Name>>(enumClassId to enumEntryName)
-class ErrorValue(message: String) : ConstantValue<String>(message)
-class NullValue : ConstantValue<Nothing?>(null)
+internal abstract class ConstantValue<out T>(open val value: T)
+internal class AnnotationValue(value: AnnotationDescriptor) : ConstantValue<AnnotationDescriptor>(value)
+internal class ArrayValue(value: List<ConstantValue<*>>) : ConstantValue<List<ConstantValue<*>>>(value)
+internal class EnumValue(val enumClassId: ClassId, val enumEntryName: Name) : ConstantValue<Pair<ClassId, Name>>(enumClassId to enumEntryName)
+internal class ErrorValue(message: String) : ConstantValue<String>(message)
+internal class NullValue : ConstantValue<Nothing?>(null)
 
-class KClassValue(value: Value) : ConstantValue<KClassValue.Value>(value) {
+internal class KClassValue(value: Value) : ConstantValue<KClassValue.Value>(value) {
     sealed class Value {
         data class NormalClass(val value: ClassLiteralValue) : Value() {
             val classId: ClassId get() = value.classId

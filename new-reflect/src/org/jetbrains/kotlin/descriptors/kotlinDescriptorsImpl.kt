@@ -8,13 +8,15 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeProjection
 import kotlin.reflect.KVariance
+import kotlin.reflect.jvm.internal.KClassImpl
+import kotlin.reflect.jvm.internal.KPackageImpl
 import kotlin.reflect.jvm.internal.KotlinReflectionInternalError
 
-class ClassDescriptorImpl(
+internal class ClassDescriptorImpl internal constructor(
     private val klass: KmClass,
     override val module: ModuleDescriptor,
     override val classId: ClassId,
-    override val jClass: Class<*>
+    override val kClass: KClassImpl<*>
 ) : ClassDescriptor {
     override val name: Name
         get() = klass.name.substringAfterLast('.').substringAfterLast('/')
@@ -85,7 +87,11 @@ private fun List<KmTypeParameter>.toTypeParameters(module: ModuleDescriptor, par
     }
 }
 
-class FileDescriptorImpl(val file: KmPackage, private val module: ModuleDescriptor) : FileDescriptor {
+internal class FileDescriptorImpl(
+    val file: KmPackage,
+    private val module: ModuleDescriptor,
+    private val kPackage: KPackageImpl
+) : FileDescriptor {
     override val scope: MemberScope
         get() = MemberScope(
             file.properties.map { PropertyDescriptorImpl(it, module, null) },
@@ -122,7 +128,7 @@ abstract class AbstractFunctionDescriptor : AbstractCallableMemberDescriptor(), 
         get() = Flag.Function.IS_SUSPEND(flags)
 }
 
-class FunctionDescriptorImpl(
+internal class FunctionDescriptorImpl(
     val function: KmFunction,
     override val module: ModuleDescriptor,
     override val containingClass: ClassDescriptorImpl?
@@ -158,7 +164,7 @@ class FunctionDescriptorImpl(
         get() = function.flags
 }
 
-class ConstructorDescriptorImpl(
+internal class ConstructorDescriptorImpl(
     val constructor: KmConstructor,
     override val module: ModuleDescriptor,
     override val containingClass: ClassDescriptorImpl
@@ -197,7 +203,7 @@ class ConstructorDescriptorImpl(
         get() = constructor.flags
 }
 
-class PropertyDescriptorImpl(
+internal class PropertyDescriptorImpl(
     val property: KmProperty,
     override val module: ModuleDescriptor,
     override val containingClass: ClassDescriptorImpl?
@@ -243,7 +249,7 @@ class PropertyDescriptorImpl(
         get() = property.flags
 }
 
-class PropertyGetterDescriptorImpl(
+internal class PropertyGetterDescriptorImpl(
     val property: PropertyDescriptorImpl
 ) : AbstractFunctionDescriptor(), PropertyGetterDescriptor {
     override val name: Name
@@ -280,7 +286,7 @@ class PropertyGetterDescriptorImpl(
         get() = property.property.getterFlags
 }
 
-class PropertySetterDescriptorImpl(
+internal class PropertySetterDescriptorImpl(
     val property: PropertyDescriptorImpl
 ) : AbstractFunctionDescriptor(), PropertySetterDescriptor {
     override val name: Name
@@ -317,7 +323,7 @@ class PropertySetterDescriptorImpl(
         get() = property.property.setterFlags
 }
 
-class TypeParameterDescriptorImpl(
+internal class TypeParameterDescriptorImpl(
     private val typeParameter: KmTypeParameter,
     private val module: ModuleDescriptor,
     private val typeParameterTable: TypeParameterTable
@@ -337,7 +343,7 @@ class TypeParameterDescriptorImpl(
         get() = Flag.TypeParameter.IS_REIFIED(typeParameter.flags)
 }
 
-class ValueParameterDescriptorImpl(
+internal class ValueParameterDescriptorImpl(
     private val valueParameter: KmValueParameter,
     override val containingDeclaration: AbstractCallableMemberDescriptor
 ) : ValueParameterDescriptor {
@@ -355,7 +361,7 @@ class ValueParameterDescriptorImpl(
         get() = valueParameter.varargElementType?.toKotlinType(containingDeclaration.module, containingDeclaration.typeParameterTable)
 }
 
-class PropertySetterParameterDescriptor(private val setter: PropertySetterDescriptorImpl) : ValueParameterDescriptor {
+internal class PropertySetterParameterDescriptor(private val setter: PropertySetterDescriptorImpl) : ValueParameterDescriptor {
     override val name: Name
         get() = "<set-?>"
     override val annotations: Annotations
@@ -395,7 +401,7 @@ private fun KmType.toKotlinType(module: ModuleDescriptor, typeParameterTable: Ty
     )
 }
 
-class TypeParameterTable(
+internal class TypeParameterTable(
     val typeParameters: List<TypeParameterDescriptorImpl>,
     private val parent: TypeParameterTable? = null
 ) {

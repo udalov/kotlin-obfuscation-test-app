@@ -16,6 +16,7 @@
 
 package kotlin.reflect.jvm.internal
 
+import kotlinx.metadata.jvm.KotlinClassMetadata
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.misc.classId
 import org.jetbrains.kotlin.misc.safeClassLoader
@@ -29,7 +30,22 @@ internal class KPackageImpl(
 ) : KDeclarationContainerImpl() {
     private inner class Data {
         val scope: MemberScope by ReflectProperties.lazySoft {
-            ModuleDescriptorImpl(jClass.safeClassLoader).createFileDescriptor(jClass).scope
+            createFileDescriptor().scope
+        }
+
+        private fun createFileDescriptor(): FileDescriptorImpl {
+            val module = ModuleDescriptorImpl(jClass.safeClassLoader)
+            jClass.readHeader()?.let { header ->
+                val metadata = KotlinClassMetadata.read(header)
+                val kmPackage = when (metadata) {
+                    is KotlinClassMetadata.FileFacade -> metadata.toKmPackage()
+                    is KotlinClassMetadata.MultiFileClassPart -> metadata.toKmPackage()
+                    else -> TODO(metadata.toString())
+                }
+                return FileDescriptorImpl(kmPackage, module, this@KPackageImpl)
+            }
+
+            TODO(jClass.name)
         }
 
         val multifileFacade: Class<*>? by ReflectProperties.lazy {

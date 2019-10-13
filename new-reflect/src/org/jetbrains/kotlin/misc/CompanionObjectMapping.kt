@@ -6,7 +6,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import java.util.*
 
-object CompanionObjectMapping {
+internal object CompanionObjectMapping {
     private val classIds: Set<ClassId> =
         (PrimitiveType.NUMBER_TYPES.map(PrimitiveType::typeFqName) +
                 FQ_NAMES.string +

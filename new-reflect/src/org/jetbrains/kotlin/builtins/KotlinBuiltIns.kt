@@ -1,13 +1,11 @@
 package org.jetbrains.kotlin.builtins
 
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptorImpl
-import org.jetbrains.kotlin.descriptors.defaultType
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.KotlinType
 
-object StandardNames {
+internal object StandardNames {
     val BUILT_INS_PACKAGE_FQ_NAME = FqName("kotlin")
 
     val FQ_NAMES = FqNames()
@@ -49,11 +47,11 @@ object StandardNames {
     }
 }
 
-object KotlinBuiltIns {
+internal object KotlinBuiltIns {
     fun isSpecialClassWithNoSupertypes(descriptor: ClassDescriptor): Boolean =
         descriptor.classId == StandardNames.CLASS_IDS.any
 }
 
-object KotlinBuiltInsImpl {
+internal object KotlinBuiltInsImpl {
     val anyType: KotlinType = TODO()
 }

@@ -8,28 +8,29 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeProjection
 import kotlin.reflect.KVariance
+import kotlin.reflect.jvm.internal.KClassImpl
 
-interface ModuleDescriptor {
+internal interface ModuleDescriptor {
     fun findClass(name: ClassName): ClassDescriptor?
 }
 
-interface DeclarationDescriptor : Annotated {
+internal interface DeclarationDescriptor : Annotated {
     val name: Name
 }
 
-interface ParameterDescriptor : DeclarationDescriptor {
+internal interface ParameterDescriptor : DeclarationDescriptor {
     val containingDeclaration: CallableMemberDescriptor
     val type: KotlinType
 }
 
-interface ValueParameterDescriptor : ParameterDescriptor {
+internal interface ValueParameterDescriptor : ParameterDescriptor {
     val declaresDefaultValue: Boolean
     val varargElementType: KotlinType?
 }
 
-interface ReceiverParameterDescriptor : ParameterDescriptor
+internal interface ReceiverParameterDescriptor : ParameterDescriptor
 
-interface CallableMemberDescriptor : DeclarationDescriptor {
+internal interface CallableMemberDescriptor : DeclarationDescriptor {
     val module: ModuleDescriptor
     val containingClass: ClassDescriptor?
 
@@ -51,14 +52,14 @@ interface CallableMemberDescriptor : DeclarationDescriptor {
     fun render(): String
 }
 
-interface FunctionDescriptor : CallableMemberDescriptor {
+internal interface FunctionDescriptor : CallableMemberDescriptor {
     val isInline: Boolean
     val isOperator: Boolean
     val isInfix: Boolean
     val isSuspend: Boolean
 }
 
-interface PropertyDescriptor : CallableMemberDescriptor {
+internal interface PropertyDescriptor : CallableMemberDescriptor {
     val isVar: Boolean
     val isLateInit: Boolean
     val isConst: Boolean
@@ -68,28 +69,28 @@ interface PropertyDescriptor : CallableMemberDescriptor {
     val setter: PropertySetterDescriptor?
 }
 
-interface PropertyAccessorDescriptor : FunctionDescriptor
-interface PropertyGetterDescriptor : PropertyAccessorDescriptor
-interface PropertySetterDescriptor : PropertyAccessorDescriptor
+internal interface PropertyAccessorDescriptor : FunctionDescriptor
+internal interface PropertyGetterDescriptor : PropertyAccessorDescriptor
+internal interface PropertySetterDescriptor : PropertyAccessorDescriptor
 
-interface ConstructorDescriptor : FunctionDescriptor {
+internal interface ConstructorDescriptor : FunctionDescriptor {
     val isPrimary: Boolean
     val constructedClass: ClassDescriptor
 }
 
-interface ClassifierDescriptor : DeclarationDescriptor
-interface TypeParameterDescriptor : ClassifierDescriptor {
+internal interface ClassifierDescriptor : DeclarationDescriptor
+internal interface TypeParameterDescriptor : ClassifierDescriptor {
     val upperBounds: List<KotlinType>
     val variance: KVariance
     val isReified: Boolean
 }
 
-interface TypeAliasDescriptor : ClassifierDescriptor
+internal interface TypeAliasDescriptor : ClassifierDescriptor
 
-interface ClassDescriptor : ClassifierDescriptor {
+internal interface ClassDescriptor : ClassifierDescriptor {
     val classId: ClassId
     val module: ModuleDescriptor
-    val jClass: Class<*>
+    val kClass: KClassImpl<*>
 
     val isInterface: Boolean
     val isAnnotationClass: Boolean
@@ -120,19 +121,19 @@ interface ClassDescriptor : ClassifierDescriptor {
     val staticScope: MemberScope
 }
 
-interface FileDescriptor {
+internal interface FileDescriptor {
     val scope: MemberScope
 }
 
-class MemberScope(
+internal class MemberScope(
     val properties: List<PropertyDescriptor>,
     val functions: List<FunctionDescriptor>
 )
 
-fun MemberScope.getFunctions(name: Name): List<FunctionDescriptor> =
+internal fun MemberScope.getFunctions(name: Name): List<FunctionDescriptor> =
     functions.filter { it.name == name }
 
-fun MemberScope.getProperties(name: Name): List<PropertyDescriptor> =
+internal fun MemberScope.getProperties(name: Name): List<PropertyDescriptor> =
     properties.filter { it.name == name }
 
 enum class DescriptorVisibility {
@@ -157,7 +158,7 @@ object DescriptorVisibilities {
     }
 }
 
-fun ValueParameterDescriptor.declaresOrInheritsDefaultValue(): Boolean {
+internal fun ValueParameterDescriptor.declaresOrInheritsDefaultValue(): Boolean {
     // TODO
     /*
     return DFS.ifAny(
@@ -168,34 +169,34 @@ fun ValueParameterDescriptor.declaresOrInheritsDefaultValue(): Boolean {
     return declaresDefaultValue
 }
 
-fun shouldHideConstructorDueToInlineClassTypeValueParameters(function: FunctionDescriptor): Boolean {
+internal fun shouldHideConstructorDueToInlineClassTypeValueParameters(function: FunctionDescriptor): Boolean {
     // TODO
     return false
 }
 
-fun createDefaultGetter(property: PropertyDescriptor, annotations: Annotations): PropertyGetterDescriptor {
+internal fun createDefaultGetter(property: PropertyDescriptor, annotations: Annotations): PropertyGetterDescriptor {
     TODO()
 }
 
-fun createDefaultSetter(property: PropertyDescriptor, annotations: Annotations, parameterAnnotations: Annotations): PropertySetterDescriptor {
+internal fun createDefaultSetter(property: PropertyDescriptor, annotations: Annotations, parameterAnnotations: Annotations): PropertySetterDescriptor {
     TODO()
 }
 
-fun CallableMemberDescriptor.isGetterOfUnderlyingPropertyOfInlineClass(): Boolean {
+internal fun CallableMemberDescriptor.isGetterOfUnderlyingPropertyOfInlineClass(): Boolean {
     // TODO
     return false
 }
 
-fun CallableMemberDescriptor.isUnderlyingPropertyOfInlineClass(): Boolean {
+internal fun CallableMemberDescriptor.isUnderlyingPropertyOfInlineClass(): Boolean {
     // TODO
     return false
 }
 
-val ClassifierDescriptor.parameters: List<TypeParameterDescriptor>
+internal val ClassifierDescriptor.parameters: List<TypeParameterDescriptor>
     // TODO
     get() = (this as? ClassDescriptor)?.declaredTypeParameters.orEmpty()
 
-val ClassifierDescriptor.defaultType: KotlinType
+internal val ClassifierDescriptor.defaultType: KotlinType
     get() = KotlinType(
         this,
         (this as? ClassDescriptor)?.parameters?.map {

@@ -16,12 +16,16 @@
 
 package kotlin.reflect.jvm.internal
 
+import kotlinx.metadata.common.KotlinCommonMetadata
+import kotlinx.metadata.jvm.KotlinClassMetadata
+import org.jetbrains.kotlin.builtins.JavaToKotlinClassMap
 import org.jetbrains.kotlin.builtins.JvmAbi
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.KotlinBuiltInsImpl
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.misc.*
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import kotlin.jvm.internal.TypeIntrinsics
 import kotlin.reflect.*
@@ -33,7 +37,33 @@ internal class KClassImpl<T : Any>(
 ) : KDeclarationContainerImpl(), KClass<T>, KClassifierImpl, KTypeParameterOwnerImpl {
     inner class Data {
         val descriptor: ClassDescriptor by ReflectProperties.lazySoft {
-            ModuleDescriptorImpl(jClass.safeClassLoader).createClassDescriptor(jClass) ?: reportUnresolvedClass()
+            createClassDescriptor() ?: reportUnresolvedClass()
+        }
+
+        private fun createClassDescriptor(): ClassDescriptor? {
+            // TODO: find out if module is necessary
+            val module = ModuleDescriptorImpl(jClass.safeClassLoader)
+
+            val builtinClassId = JavaToKotlinClassMap.mapJavaToKotlin(FqName(jClass.name))
+            if (builtinClassId != null) {
+                val packageName = builtinClassId.packageFqName
+                // kotlin.collections -> kotlin/collections/collections.kotlin_builtins
+                val resourcePath = packageName.asString().replace('.', '/') + '/' + packageName.shortName() + ".kotlin_builtins"
+                val bytes = Unit::class.java.classLoader.getResourceAsStream(resourcePath)?.readBytes()
+                    ?: error("No builtins metadata file found: $resourcePath") // TODO: return null
+                val packageFragment = KotlinCommonMetadata.read(bytes)?.toKmModuleFragment()
+                    ?: error("Incompatible metadata version: $resourcePath") // TODO
+                val kmClass = packageFragment.classes.find { it.name == builtinClassId.asClassName() }
+                    ?: error("Built-in class not found: $builtinClassId in $resourcePath")
+                return ClassDescriptorImpl(kmClass, module, builtinClassId, this@KClassImpl)
+            }
+
+            jClass.readHeader()?.let { header ->
+                val kmClass = (KotlinClassMetadata.read(header) as/*TODO*/ KotlinClassMetadata.Class).toKmClass()
+                return ClassDescriptorImpl(kmClass, module, jClass.classId, this@KClassImpl)
+            }
+
+            TODO(jClass.name)
         }
 
         val annotations: List<Annotation> by ReflectProperties.lazySoft { descriptor.computeAnnotations() }

@@ -7,7 +7,7 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import kotlin.reflect.KVariance
 
-class KotlinType(
+internal class KotlinType(
     val descriptor: ClassifierDescriptor,
     val arguments: List<TypeProjection>,
     val isMarkedNullable: Boolean,
@@ -35,16 +35,16 @@ class KotlinType(
     }
 }
 
-class TypeProjection(
+internal class TypeProjection(
     val type: KotlinType,
     val isStarProjection: Boolean,
     val projectionKind: KVariance
 )
 
-fun KotlinType.isNullableType(): Boolean =
+internal fun KotlinType.isNullableType(): Boolean =
     // TODO: TypeUtils.isNullableType
     isMarkedNullable
 
-fun KotlinType.isInlineClassType(): Boolean =
+internal fun KotlinType.isInlineClassType(): Boolean =
     // TODO
     (descriptor as? ClassDescriptor)?.isInline == true

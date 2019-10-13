@@ -65,7 +65,7 @@ sealed class JvmFunctionSignature {
     }
 }
 
-sealed class JvmPropertySignature {
+internal sealed class JvmPropertySignature {
     /**
      * Returns the JVM signature of the getter of this property. In case the property doesn't have a getter,
      * constructs the signature of its imaginary default getter. See CallableReference#getSignature for more information

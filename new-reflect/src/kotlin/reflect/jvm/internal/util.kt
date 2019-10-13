@@ -16,6 +16,7 @@
 
 package kotlin.reflect.jvm.internal
 
+import kotlinx.metadata.jvm.KotlinClassHeader
 import org.jetbrains.kotlin.builtins.JavaToKotlinClassMap
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
@@ -245,4 +246,11 @@ internal fun createKCallable(descriptor: CallableMemberDescriptor, container: KD
         return KFunctionImpl(container, descriptor)
     }
     throw KotlinReflectionInternalError("Unsupported callable: $descriptor")
+}
+
+internal fun Class<*>.readHeader(): KotlinClassHeader? {
+    val metadata = getDeclaredAnnotation(Metadata::class.java) ?: return null
+    with(metadata) {
+        return KotlinClassHeader(kind, metadataVersion, data1, data2, extraString, packageName, extraInt)
+    }
 }

@@ -53,7 +53,7 @@ internal abstract class KPropertyImpl<out V> private constructor(
                         JvmProtoBufUtil.isMovedFromInterfaceCompanion(jvmSignature.proto) */
                     ) {
                         container.jClass.enclosingClass
-                    } else descriptor.containingClass?.jClass ?: container.jClass
+                    } else descriptor.containingClass?.kClass?.jClass ?: container.jClass
 
                     try {
                         owner.getDeclaredField(it.name)
