@@ -227,18 +227,7 @@ internal class KClassImpl<T : Any>(
             }
         }
 
-        // TODO
-/*
-        return (descriptor as? DeserializedClassDescriptor)?.let { descriptor ->
-            descriptor.classProto.getExtensionOrNull(JvmProtoBuf.classLocalVariable, index)?.let { proto ->
-                deserializeToDescriptor(
-                    jClass, proto, descriptor.c.nameResolver, descriptor.c.typeTable, descriptor.metadataVersion,
-                    MemberDeserializer::loadProperty
-                )
-            }
-        }
-*/
-        return null
+        return (descriptor as? ClassDescriptorImpl)?.getLocalProperty(index)
     }
 
     override val simpleName: String? get() = data().simpleName

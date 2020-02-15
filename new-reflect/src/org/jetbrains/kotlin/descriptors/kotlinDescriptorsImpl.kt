@@ -1,6 +1,7 @@
 package org.jetbrains.kotlin.descriptors
 
 import kotlinx.metadata.*
+import kotlinx.metadata.jvm.localDelegatedProperties
 import org.jetbrains.kotlin.builtins.KotlinBuiltInsImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.name.ClassId
@@ -9,6 +10,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeProjection
 import kotlin.reflect.KVariance
 import kotlin.reflect.jvm.internal.KClassImpl
+import kotlin.reflect.jvm.internal.KDeclarationContainerImpl
 import kotlin.reflect.jvm.internal.KPackageImpl
 import kotlin.reflect.jvm.internal.KotlinReflectionInternalError
 
@@ -73,11 +75,16 @@ internal class ClassDescriptorImpl internal constructor(
         get() = emptyList() // TODO
     override val memberScope: MemberScope
         get() = MemberScope(
-            klass.properties.map { PropertyDescriptorImpl(it, module, this) },
+            klass.properties.map { PropertyDescriptorImpl(it, module, this, kClass) },
             klass.functions.map { FunctionDescriptorImpl(it, module, this) }
         ) // TODO
     override val staticScope: MemberScope
         get() = MemberScope(emptyList(), emptyList()) // TODO
+
+    fun getLocalProperty(index: Int): PropertyDescriptorImpl? {
+        val it = klass.localDelegatedProperties.getOrNull(index) ?: return null
+        return PropertyDescriptorImpl(it, module, null, kClass)
+    }
 }
 
 private fun List<KmTypeParameter>.toTypeParameters(module: ModuleDescriptor, parent: TypeParameterTable?): TypeParameterTable {
@@ -94,9 +101,14 @@ internal class FileDescriptorImpl(
 ) : FileDescriptor {
     override val scope: MemberScope
         get() = MemberScope(
-            file.properties.map { PropertyDescriptorImpl(it, module, null) },
+            file.properties.map { PropertyDescriptorImpl(it, module, null, kPackage) },
             file.functions.map { FunctionDescriptorImpl(it, module, null) }
         )
+
+    fun getLocalProperty(index: Int): PropertyDescriptorImpl? {
+        val it = file.localDelegatedProperties.getOrNull(index) ?: return null
+        return PropertyDescriptorImpl(it, module, null, kPackage)
+    }
 }
 
 abstract class AbstractCallableMemberDescriptor : CallableMemberDescriptor {
@@ -206,7 +218,8 @@ internal class ConstructorDescriptorImpl(
 internal class PropertyDescriptorImpl(
     val property: KmProperty,
     override val module: ModuleDescriptor,
-    override val containingClass: ClassDescriptorImpl?
+    override val containingClass: ClassDescriptorImpl?,
+    val container: KDeclarationContainerImpl
 ) : AbstractCallableMemberDescriptor(), PropertyDescriptor {
     override val name: Name
         get() = property.name

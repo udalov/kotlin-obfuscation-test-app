@@ -79,7 +79,7 @@ internal class KFunctionImpl private constructor(
             is Method -> when {
                 !Modifier.isStatic(member.modifiers) ->
                     createInstanceMethodCaller(member)
-                descriptor.annotations.findAnnotation(JVM_STATIC) != null ->
+                descriptor.containingClass?.isObject == true ->
                     createJvmStaticInObjectCaller(member)
                 else ->
                     createStaticMethodCaller(member)

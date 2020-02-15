@@ -5,9 +5,9 @@
 
 package kotlin.reflect.jvm.internal
 
+import kotlinx.metadata.jvm.syntheticMethodForAnnotations
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.annotations.hasAnnotation
 import org.jetbrains.kotlin.types.isNullableType
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
@@ -191,8 +191,16 @@ private fun KPropertyImpl.Accessor<*, *>.computeCallerForAccessor(isGetter: Bool
         return ThrowingCaller
     }
 
-    fun isJvmStaticProperty(): Boolean =
-        property.descriptor.annotations.hasAnnotation(JVM_STATIC)
+    fun isJvmStaticProperty(): Boolean {
+        // TODO: find out if there's an easier way
+        val descriptor = property.descriptor as? PropertyDescriptorImpl ?: return false
+        if (descriptor.containingClass?.isObject != true) return false
+        val annotationsMethodSignature = descriptor.property.syntheticMethodForAnnotations ?: return false
+        val kClass = descriptor.container as? KClassImpl<*> ?: return false
+        // TODO: this won't fly in case of different extensions, do additional filtering with annotationsMethodSignature.desc
+        val annotationsMethod = kClass.jClass.declaredMethods.single { it.name == annotationsMethodSignature.name }
+        return annotationsMethod.getDeclaredAnnotation(JvmStatic::class.java) != null
+    }
 
     fun isNotNullProperty(): Boolean =
         !property.descriptor.returnType.isNullableType()

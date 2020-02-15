@@ -29,8 +29,8 @@ internal class KPackageImpl(
     @Suppress("unused") val usageModuleName: String? = null // may be useful for debug
 ) : KDeclarationContainerImpl() {
     private inner class Data {
-        val scope: MemberScope by ReflectProperties.lazySoft {
-            createFileDescriptor().scope
+        val descriptor: FileDescriptor by ReflectProperties.lazySoft {
+            createFileDescriptor()
         }
 
         private fun createFileDescriptor(): FileDescriptorImpl {
@@ -58,7 +58,7 @@ internal class KPackageImpl(
         }
 
         val members: Collection<KCallableImpl<*>> by ReflectProperties.lazySoft {
-            getMembers(scope, DECLARED)
+            getMembers(descriptor.scope, DECLARED)
         }
     }
 
@@ -66,7 +66,7 @@ internal class KPackageImpl(
 
     override val methodOwner: Class<*> get() = data().multifileFacade ?: jClass
 
-    private val scope: MemberScope get() = data().scope
+    private val scope: MemberScope get() = data().descriptor.scope
 
     override val members: Collection<KCallable<*>> get() = data().members
 
@@ -79,19 +79,8 @@ internal class KPackageImpl(
     override fun getFunctions(name: Name): Collection<FunctionDescriptor> =
         scope.getFunctions(name)
 
-    override fun getLocalProperty(index: Int): PropertyDescriptor? {
-/*
-        return data().metadata?.let { (nameResolver, packageProto, metadataVersion) ->
-            packageProto.getExtensionOrNull(JvmProtoBuf.packageLocalVariable, index)?.let { proto ->
-                deserializeToDescriptor(
-                    jClass, proto, nameResolver, TypeTable(packageProto.typeTable), metadataVersion,
-                    MemberDeserializer::loadProperty
-                )
-            }
-        }
-*/
-        return null
-    }
+    override fun getLocalProperty(index: Int): PropertyDescriptor? =
+        (data().descriptor as? FileDescriptorImpl)?.getLocalProperty(index)
 
     override fun equals(other: Any?): Boolean =
         other is KPackageImpl && jClass == other.jClass
