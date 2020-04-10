@@ -140,7 +140,7 @@ internal object RuntimeTypeMapper {
             // return mapJvmFunctionSignature(function)
         }
 
-        // TODO: AbstractFunctionDescriptor.signature
+        // TODO: FunctionDescriptor.signature, PropertyDescriptor.signature
 
         if (function is FunctionDescriptorImpl) {
             return JvmFunctionSignature.KotlinFunction(function.function.signature ?: error("No signature for ${function.render()}"))
@@ -153,6 +153,10 @@ internal object RuntimeTypeMapper {
         }
         if (function is PropertySetterDescriptorImpl) {
             return JvmFunctionSignature.KotlinFunction(function.property.property.setterSignature ?: error("No setter signature for ${function.render()}"))
+        }
+
+        if (function is FakeOverrideFunctionDescriptor) {
+            return mapSignature(function.overriddenFunctions.first())
         }
 
         // throw KotlinReflectionInternalError("Unknown origin of $function (${function.javaClass})")
@@ -170,6 +174,10 @@ internal object RuntimeTypeMapper {
                 property.property.getterSignature,
                 property.property.setterSignature
             )
+        }
+
+        if (property is FakeOverridePropertyDescriptor) {
+            return mapPropertySignature(property.overriddenProperties.first())
         }
 
         TODO()

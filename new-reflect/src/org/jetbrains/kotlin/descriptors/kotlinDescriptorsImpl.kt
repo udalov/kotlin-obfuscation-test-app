@@ -75,9 +75,13 @@ internal class ClassDescriptorImpl internal constructor(
         get() = emptyList() // TODO
     override val memberScope: MemberScope
         get() = MemberScope(
-            klass.properties.map { PropertyDescriptorImpl(it, module, this, kClass) },
-            klass.functions.map { FunctionDescriptorImpl(it, module, this) }
-        ) // TODO
+            klass.properties.map { PropertyDescriptorImpl(it, module, this, kClass) }.let { realProperties ->
+                realProperties + addPropertyFakeOverrides(this, realProperties)
+            },
+            klass.functions.map { FunctionDescriptorImpl(it, module, this) }.let { realFunctions ->
+                realFunctions + addFunctionFakeOverrides(this, realFunctions)
+            }
+        ) // TODO: fake overrides should be cached
     override val staticScope: MemberScope
         get() = MemberScope(emptyList(), emptyList()) // TODO
 
@@ -189,8 +193,8 @@ internal class ConstructorDescriptorImpl(
     override val typeParameterTable: TypeParameterTable =
         emptyList<KmTypeParameter>().toTypeParameters(module, containingClass.typeParameterTable)
 
-    override val dispatchReceiverParameter: ReceiverParameterDescriptor
-        get() = containingClass.thisAsReceiverParameter // TODO
+    override val dispatchReceiverParameter: ReceiverParameterDescriptor?
+        get() = if (containingClass.isInner) containingClass.containingClass!!.thisAsReceiverParameter else null
     override val extensionReceiverParameter: ReceiverParameterDescriptor?
         get() = null
     override val valueParameters: List<ValueParameterDescriptor>
