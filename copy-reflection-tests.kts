@@ -1,4 +1,4 @@
-#!/usr/bin/env kotlinc -script
+#!/usr/bin/env kotlin
 
 // This script copies test cases on reflection from the main Kotlin project,
 // and adapts them to be runnable together in one application.
@@ -135,6 +135,6 @@ val newLines = arrayListOf<String>().apply {
 
 mainKt.bufferedWriter().use { writer ->
     for (line in newLines) {
-        writer.appendln(line)
+        writer.appendLine(line)
     }
 }
