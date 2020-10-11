@@ -1,7 +1,7 @@
 package tests.mapping.topLevelProperty
 
 import kotlin.reflect.jvm.*
-import kotlin.test.assertEquals
+import kotlin.test.*
 
 var topLevel = "123"
 
@@ -10,19 +10,21 @@ val fileFacadeClass = object {}::class.java.enclosingClass
 fun box(): String {
     val p = ::topLevel
 
-    assert(p.javaField != null) { "Fail p field" }
-    val field = p.javaField!!
-    assertEquals(fileFacadeClass, field.getDeclaringClass())
+    assertNotNull(p.javaField, "Fail p field")
+    assertEquals(p.javaField!!.getDeclaringClass(), fileFacadeClass)
 
     val getter = p.javaGetter!!
     val setter = p.javaSetter!!
 
-    assertEquals(getter, fileFacadeClass.getMethod("getTopLevel"))
-    assertEquals(setter, fileFacadeClass.getMethod("setTopLevel", String::class.java))
+    assertEquals(fileFacadeClass.getMethod("getTopLevel"), getter)
+    assertEquals(fileFacadeClass.getMethod("setTopLevel", String::class.java), setter)
 
-    assert(getter.invoke(null) == "123") { "Fail k getter" }
+    assertNull(p.getter.javaConstructor)
+    assertNull(p.setter.javaConstructor)
+
+    assertEquals("123", getter.invoke(null), "Fail k getter")
     setter.invoke(null, "456")
-    assert(getter.invoke(null) == "456") { "Fail k setter" }
+    assertEquals("456", getter.invoke(null), "Fail k setter")
 
     return "OK"
 }

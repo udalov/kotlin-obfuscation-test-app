@@ -1,5 +1,8 @@
 package tests.mapping.types.innerGenericTypeArgument
 
+// "IOOBE: Invalid index 4, size is 4" for java.lang.reflect.ParameterizedType on Android
+
+
 import kotlin.reflect.jvm.javaType
 import kotlin.test.assertEquals
 

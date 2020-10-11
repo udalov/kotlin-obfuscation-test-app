@@ -1,7 +1,6 @@
 package tests.parameters.boundReferences
 
 import kotlin.reflect.*
-import kotlin.reflect.jvm.*
 import kotlin.test.*
 
 class C {

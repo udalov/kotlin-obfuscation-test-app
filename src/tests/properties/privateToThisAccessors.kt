@@ -2,7 +2,7 @@ package tests.properties.privateToThisAccessors
 
 import kotlin.reflect.*
 import kotlin.reflect.full.*
-import kotlin.reflect.jvm.*
+import kotlin.reflect.jvm.isAccessible
 
 class K<in T : String> {
     private var t: T

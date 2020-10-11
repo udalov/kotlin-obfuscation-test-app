@@ -1,7 +1,7 @@
 package tests.lambdaClasses.parameterNamesAndNullability
 
-import kotlin.reflect.*
-import kotlin.reflect.jvm.*
+import kotlin.reflect.KParameter
+import kotlin.reflect.jvm.reflect
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 

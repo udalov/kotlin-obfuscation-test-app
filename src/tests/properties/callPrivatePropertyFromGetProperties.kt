@@ -2,7 +2,7 @@ package tests.properties.callPrivatePropertyFromGetProperties
 
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.*
-import kotlin.reflect.jvm.*
+import kotlin.reflect.jvm.isAccessible
 
 class K(private val value: String)
 

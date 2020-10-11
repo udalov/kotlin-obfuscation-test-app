@@ -1,3 +1,5 @@
+
+
 package tests.createAnnotation.primitivesAndArrays
 
 import kotlin.test.assertEquals
@@ -23,7 +25,7 @@ annotation class Anno(
         val stra: Array<String>
 )
 
-@tests.createAnnotation.primitivesAndArrays.Anno(
+@Anno(
         1.toByte(),
         'x',
         3.14,

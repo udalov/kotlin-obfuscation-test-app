@@ -1,7 +1,8 @@
-package tests.createAnnotation.floatingPointParameters
 
+package tests.createAnnotation.floatingPointParameters
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 annotation class D(val d: Double)
 annotation class F(val f: Float)
@@ -25,11 +26,14 @@ fun fMinusZero() {}
 @F(+0.0f)
 fun fPlusZero() {}
 
-fun check(x: Any, y: Any) {
+fun check(x: Any, y: Any, regexString: String) {
     assertEquals(x, y)
     assertEquals(y, x)
     assertEquals(x.hashCode(), y.hashCode())
-    assertEquals(x.toString(), y.toString())
+
+    val regex = regexString.toRegex()
+    assertTrue(regex.matches(x.toString()))
+    assertTrue(regex.matches(y.toString()))
 }
 
 fun checkNot(x: Any, y: Any) {
@@ -49,10 +53,10 @@ fun box(): String {
     val dpz = D::class.constructors.single().call(+0.0)
     val fmz = F::class.constructors.single().call(-0.0f)
     val fpz = F::class.constructors.single().call(+0.0f)
-    check(::dMinusZero.annotations.single() as D, dmz)
-    check(::dPlusZero.annotations.single() as D, dpz)
-    check(::fMinusZero.annotations.single() as F, fmz)
-    check(::fPlusZero.annotations.single() as F, fpz)
+    check(::dMinusZero.annotations.single() as D, dmz, "@tests.createAnnotation.floatingPointParameters.D\\(d=-0.0\\)")
+    check(::dPlusZero.annotations.single() as D, dpz, "@tests.createAnnotation.floatingPointParameters.D\\(d=0.0\\)")
+    check(::fMinusZero.annotations.single() as F, fmz, "@tests.createAnnotation.floatingPointParameters.F\\(f=-0.0f?\\)")
+    check(::fPlusZero.annotations.single() as F, fpz, "@tests.createAnnotation.floatingPointParameters.F\\(f=0.0f?\\)")
 
     checkNot(dmz, dpz)
     checkNot(fmz, fpz)

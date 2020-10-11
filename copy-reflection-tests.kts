@@ -18,55 +18,36 @@ val destinationDirectory = File("src/tests")
 if (destinationDirectory.exists()) destinationDirectory.deleteRecursively()
 
 val ignored = listOf(
-    "classes/jvmName.kt",
-    "classes/qualifiedName.kt",
     "classLiterals/simpleClassLiteral.kt",
-    "createAnnotation/equalsHashCodeToString.kt",
-    "functions/genericOverriddenFunction.kt",
-    "methodsFromAny/classToString.kt",
-    "methodsFromAny/functionToString.kt",
-    "methodsFromAny/functionFromStdlib",
-    "methodsFromAny/memberExtensionToString.kt",
-    "methodsFromAny/propertyToString.kt",
-    "methodsFromAny/typeToString.kt",
-    "methodsFromAny/typeToStringInnerGeneric.kt",
     "properties/getDelegate/nameClashExtensionProperties.kt",
-    "properties/genericProperty.kt",
-    "properties/genericOverriddenProperty.kt",
-    "properties/localDelegated/localAndNonLocal.kt", // Enable after migration to 1.2.60+
-    "specialBuiltIns/getMembersOfStandardJavaClasses.kt",
     "enclosing/",
     "genericSignature/",
-    "noReflectAtRuntime/"
-)
-
-val needPackageReplacement = listOf(
-    "createAnnotation/primitivesAndArrays.kt",
-    "createAnnotation/enumKClassAnnotation.kt",
-    "createAnnotation/arrayOfKClasses.kt",
-    "types/createType/innerGeneric.kt",
-    "types/createType/simpleCreateType.kt"
+    "noReflectAtRuntime/",
+    "typeOf/noReflect/",
 )
 
 val result = mutableListOf<String>()
 
 fun isTestDirective(line: String): Boolean =
-        "TODO: muted automatically" in line ||
-                "TODO: investigate should" in line ||
-                "IGNORE_BACKEND" in line ||
-                "TARGET_BACKEND" in line ||
-                "WITH_REFLECT" in line ||
-                "FULL_JDK" in line
+    "TODO: muted automatically" in line ||
+            "TODO: investigate should" in line ||
+            "IGNORE_BACKEND" in line ||
+            "TARGET_BACKEND" in line ||
+            "WITH_RUNTIME" in line ||
+            "WITH_REFLECT" in line ||
+            "KJS_WITH_FULL_RUNTIME" in line ||
+            "FULL_JDK" in line ||
+            "SKIP_JDK6" in line ||
+            "!LANGUAGE" in line ||
+            "!USE_EXPERIMENTAL" in line
 
-fun replacePackage(line: String, pkg: String): String {
-    val inAnnotations = line.replace("@", "@$pkg.")
-    if (inAnnotations != line) return inAnnotations
+val PACKAGE_REPLACEMENT_REGEX = "([^A-Za-z0-9.:])test\\.".toRegex()
 
-    return line.replace("assertEquals(\"", "assertEquals(\"$pkg.")
-}
+fun replacePackage(line: String, pkg: String): String =
+    line.replace(PACKAGE_REPLACEMENT_REGEX, "$1$pkg.")
 
 for (file in reflect.walk()) {
-    if (!file.isFile) continue
+    if (!file.isFile || file.extension != "kt") continue
 
     val path = file.relativeTo(reflect).path
     if (ignored.any { path.startsWith(it) }) {
@@ -74,8 +55,13 @@ for (file in reflect.walk()) {
         continue
     }
 
-    val content = file.readLines().filterNot(::isTestDirective).toMutableList()
+    val allContent = file.readLines()
+    if (allContent.any { "TARGET_BACKEND: JS" in it }) {
+        println("Skipping non-JVM-targeted test $path")
+        continue
+    }
 
+    val content = allContent.filterNot(::isTestDirective).toMutableList()
     if (content.count { "// FILE" in it } > 1) {
         println("Skipping multi-file test $path")
         continue
@@ -97,10 +83,8 @@ for (file in reflect.walk()) {
         content.add(0, packageDirective)
     }
 
-    if (needPackageReplacement.any { path.startsWith(it) }) {
-        for (i in content.indices) {
-            content.set(i, replacePackage(content[i], destinationPackage))
-        }
+    for (i in content.indices) {
+        content[i] = replacePackage(content[i], destinationPackage)
     }
 
     val destination = File(destinationDirectory, path)
@@ -121,7 +105,7 @@ val newLines = arrayListOf<String>().apply {
         when (line.trim()) {
             "// ------------------------ >8 ------------------------" -> {
                 state = State.SKIP
-                for (testName in result) {
+                for (testName in result.sorted()) {
                     add("        test(\"${testName.substringAfter("tests.")}\") { $testName.box() }")
                 }
             }

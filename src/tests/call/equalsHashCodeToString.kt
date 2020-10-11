@@ -1,3 +1,5 @@
+
+
 package tests.call.equalsHashCodeToString
 
 class A
@@ -9,7 +11,7 @@ fun box(): String {
     assert(A::equals.call(a, a))
     assert(!A::equals.call(a, 0))
     assert(A::hashCode.call(a) == A::hashCode.call(a))
-    assert(A::toString.call(a).startsWith("A@"))
+    assert(A::toString.call(a).startsWith("tests.call.equalsHashCodeToString.A@"))
 
     assert(D::equals.call(D("foo"), D("foo")))
     assert(!D::equals.call(D("foo"), D("bar")))

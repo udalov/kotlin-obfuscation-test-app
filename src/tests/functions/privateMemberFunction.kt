@@ -2,7 +2,7 @@ package tests.functions.privateMemberFunction
 
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.*
-import kotlin.reflect.jvm.*
+import kotlin.reflect.jvm.isAccessible
 import kotlin.test.assertEquals
 
 class A {

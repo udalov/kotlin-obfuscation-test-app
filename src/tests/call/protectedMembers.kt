@@ -1,7 +1,7 @@
 package tests.call.protectedMembers
 
 import kotlin.reflect.*
-import kotlin.reflect.jvm.*
+import kotlin.reflect.jvm.isAccessible
 import kotlin.test.*
 
 abstract class Base {

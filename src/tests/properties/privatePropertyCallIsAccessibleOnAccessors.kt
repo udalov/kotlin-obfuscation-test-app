@@ -2,7 +2,7 @@ package tests.properties.privatePropertyCallIsAccessibleOnAccessors
 
 import kotlin.reflect.*
 import kotlin.reflect.full.*
-import kotlin.reflect.jvm.*
+import kotlin.reflect.jvm.isAccessible
 import kotlin.test.*
 
 class A(private var foo: String)

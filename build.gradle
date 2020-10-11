@@ -42,3 +42,10 @@ shadowJar {
 assemble {
     dependsOn shadowJar
 }
+
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+        freeCompilerArgs += ["-Xopt-in=kotlin.ExperimentalStdlibApi"]
+    }
+}

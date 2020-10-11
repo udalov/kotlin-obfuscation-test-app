@@ -1,3 +1,4 @@
+
 package tests.createAnnotation.enumKClassAnnotation
 
 import kotlin.reflect.KClass
@@ -14,7 +15,7 @@ annotation class Anno(
         val foos: Array<Foo>
 )
 
-@tests.createAnnotation.enumKClassAnnotation.Anno(
+@Anno(
         DeprecationLevel.WARNING,
         Number::class,
         Foo("OK"),

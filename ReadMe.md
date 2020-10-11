@@ -11,12 +11,11 @@ At the moment, this project consists of the majority of tests on reflection [fro
 
 The application will run each of the tests, printing "OK" if succeeded, or the error message if not. At the end, the total number of passed tests is printed:
 
-    mapping.fakeOverrides.javaFieldGetterSetter: OK
-    mapping.fakeOverrides.javaMethod: OK
-    mapping.jvmStatic.companionObjectFunction: OK
+    annotations.annotationRetentionAnnotation: OK
+    annotations.findAnnotation: OK
+    annotations.genericExtensionProperty: OK
     ...
-    typeParameters.typeParametersAndNames: OK
-    typeParameters.declarationSiteVariance: OK
-    typeParameters.upperBounds: OK
-    228/228 tests passed
-
+    types.subtyping.typeProjection: OK
+    types.typeArguments: OK
+    types.useSiteVariance: OK
+    328/328 tests passed

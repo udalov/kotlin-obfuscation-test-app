@@ -1,6 +1,6 @@
 package tests.call.cannotCallEnumConstructor
 
-import kotlin.reflect.jvm.*
+import kotlin.reflect.jvm.isAccessible
 
 enum class E
 
