@@ -90,6 +90,8 @@ internal interface TypeAliasDescriptor : ClassifierDescriptor
 internal interface ClassDescriptor : ClassifierDescriptor {
     val classId: ClassId
     val module: ModuleDescriptor
+
+    // Note that it's a KClass for `[Ljava.lang.Object;` in case this class descriptor represents kotlin/Array.
     val kClass: KClassImpl<*>
 
     val isInterface: Boolean
@@ -143,6 +145,10 @@ enum class DescriptorVisibility {
     PROTECTED,
     PUBLIC,
     // TODO
+    ;
+
+    fun isPrivate(): Boolean =
+        this == PRIVATE || this == PRIVATE_TO_THIS
 }
 
 enum class Modality {

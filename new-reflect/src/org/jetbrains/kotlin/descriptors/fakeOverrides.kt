@@ -28,7 +28,8 @@ internal fun <D : CallableMemberDescriptor> addFakeOverrides(
     val fromBase = mutableMapOf<Name, MutableList<D>>()
     for (supertype in klass.supertypes) {
         val superclass = supertype.descriptor as? ClassDescriptor ?: continue
-        for ((name, members) in selector(superclass).groupBy(CallableMemberDescriptor::name)) {
+        val allMembers = selector(superclass).filter { it.visibility?.isPrivate() != true }
+        for ((name, members) in allMembers.groupBy(CallableMemberDescriptor::name)) {
             fromBase.getOrPut(name) { ArrayList(1) }.addAll(members)
         }
     }

@@ -1,6 +1,7 @@
 package org.jetbrains.kotlin.name
 
 import kotlinx.metadata.ClassName
+import kotlinx.metadata.isLocal
 
 typealias Name = String
 
@@ -28,11 +29,23 @@ data class FqName(val fqName: String) {
 data class ClassId(val packageFqName: FqName, val relativeClassName: FqName, val isLocal: Boolean = false) {
     constructor(packageFqName: FqName, relativeClassName: Name) : this(packageFqName, FqName(relativeClassName))
 
+    constructor(className: ClassName) : this(
+        FqName(className.substringBeforeLast('/', "").replace('/', '.')),
+        FqName(className.substringAfterLast('/'))
+    ) {
+        require(!className.isLocal) { TODO("Local class names are not yet supported here: $className") }
+    }
+
     val shortClassName: Name
         get() = relativeClassName.shortName()
 
+    // TODO: investigate if call sites mean to use asJavaLookupFqName instead
     fun asSingleFqName(): FqName =
         if (packageFqName.isRoot) relativeClassName else FqName(packageFqName.asString() + "." + relativeClassName.asString())
+
+    fun asJavaLookupFqName(): String =
+        (if (packageFqName.isRoot) "" else (packageFqName.asString() + ".")) +
+            relativeClassName.fqName.replace('.', '$')
 
     fun createNestedClassId(name: Name): ClassId =
         ClassId(packageFqName, relativeClassName.child(name), isLocal)

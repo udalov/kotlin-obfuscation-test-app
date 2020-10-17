@@ -33,6 +33,17 @@ internal class KotlinType(
             append("?")
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        // TODO: isSubtypeOf(this, other) && isSubtypeOf(other, this)
+        return other is KotlinType &&
+            other.descriptor == descriptor &&
+            other.arguments == arguments &&
+            other.isMarkedNullable == isMarkedNullable
+    }
+
+    override fun hashCode(): Int =
+        (descriptor.hashCode() * 31 + arguments.hashCode()) * 31 + isMarkedNullable.hashCode()
 }
 
 internal class TypeProjection(

@@ -56,8 +56,7 @@ fun KClassifier.createType(
         TypeProjection(kotlinType, variance == null, variance ?: KVariance.OUT /* TODO verify */)
     }, nullable, Annotations.EMPTY /* TODO */)
 
-    KTypeImpl(kotlinType) { TODO(kotlinType.render()) }
-
+    return KTypeImpl(kotlinType)
 /*
     val typeConstructor = descriptor.typeConstructor
     val parameters = typeConstructor.parameters
@@ -73,7 +72,6 @@ fun KClassifier.createType(
 
     return KTypeImpl(createKotlinType(typeAnnotations, typeConstructor, arguments, nullable))
 */
-    TODO()
 }
 
 /*

@@ -5,6 +5,7 @@
 
 package kotlin.reflect.jvm.internal
 
+import org.jetbrains.kotlin.descriptors.AbstractCallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import java.lang.reflect.ParameterizedType
@@ -59,7 +60,7 @@ internal abstract class KCallableImpl<out R> : KCallable<R>, KTypeParameterOwner
         // Constructor parameters of Java annotations are not ordered in any way, we order them by name here to be more stable.
         // Note that positional call (via "call") is not allowed unless there's a single non-"value" parameter,
         // so the order of parameters of Java annotation constructors here can be arbitrary
-        if (isAnnotationConstructor && TODO() /* descriptor is JavaCallableMemberDescriptor*/) {
+        if (isAnnotationConstructor && descriptor !is AbstractCallableMemberDescriptor) {
             result.sortBy { it.name }
         }
 

@@ -44,7 +44,39 @@ internal class KClassImpl<T : Any>(
             // TODO: find out if module is necessary
             val module = ModuleDescriptorImpl(jClass.safeClassLoader)
 
-            val builtinClassId = JavaToKotlinClassMap.mapJavaToKotlin(FqName(jClass.name))
+            val className = jClass.name
+            val builtinClassId = when (className) {
+                "[Ljava.lang.Object;" -> ClassId(FqName("kotlin"), "Array")
+                // TODO: move this into mapJavaToKotlin
+                "[Z" -> ClassId(FqName("kotlin"), "BooleanArray")
+                "[B" -> ClassId(FqName("kotlin"), "ByteArray")
+                "[C" -> ClassId(FqName("kotlin"), "CharArray")
+                "[D" -> ClassId(FqName("kotlin"), "DoubleArray")
+                "[F" -> ClassId(FqName("kotlin"), "FloatArray")
+                "[I" -> ClassId(FqName("kotlin"), "IntArray")
+                "[J" -> ClassId(FqName("kotlin"), "LongArray")
+                "[S" -> ClassId(FqName("kotlin"), "ShortArray")
+                "java.lang.Void" -> ClassId(FqName("kotlin"), "Nothing") // TODO: ???
+                else -> when {
+                    jClass.isPrimitive -> {
+                        when (jClass) {
+                            Boolean::class.java -> ClassId(FqName("kotlin"), "Boolean")
+                            Byte::class.java -> ClassId(FqName("kotlin"), "Byte")
+                            Char::class.java -> ClassId(FqName("kotlin"), "Char")
+                            Double::class.java -> ClassId(FqName("kotlin"), "Double")
+                            Float::class.java -> ClassId(FqName("kotlin"), "Float")
+                            Int::class.java -> ClassId(FqName("kotlin"), "Int")
+                            Long::class.java -> ClassId(FqName("kotlin"), "Long")
+                            Short::class.java -> ClassId(FqName("kotlin"), "Short")
+                            else -> error(jClass)
+                        }
+                    }
+                    className.startsWith("[") -> {
+                        return (Array<Any>::class as KClassImpl).descriptor
+                    }
+                    else -> JavaToKotlinClassMap.mapJavaToKotlin(jClass.classId.asSingleFqName())
+                }
+            }
             if (builtinClassId != null) {
                 val packageName = builtinClassId.packageFqName
                 // kotlin.collections -> kotlin/collections/collections.kotlin_builtins
@@ -63,7 +95,7 @@ internal class KClassImpl<T : Any>(
                 return ClassDescriptorImpl(kmClass, module, jClass.classId, this@KClassImpl)
             }
 
-            TODO(jClass.name)
+            TODO(className)
         }
 
         val annotations: List<Annotation> by ReflectProperties.lazySoft { descriptor.computeAnnotations() }

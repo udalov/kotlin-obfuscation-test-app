@@ -354,6 +354,8 @@ internal class TypeParameterDescriptorImpl(
 
     override val upperBounds: List<KotlinType>
         get() = typeParameter.upperBounds.map { it.toKotlinType(module, typeParameterTable) }
+            .ifEmpty { listOf(KotlinBuiltInsImpl.anyNType) }
+
     override val variance: KVariance
         get() = typeParameter.variance.toVariance()
     override val isReified: Boolean
@@ -398,7 +400,6 @@ internal class PropertySetterParameterDescriptor(private val setter: PropertySet
 private fun KmType.toKotlinType(module: ModuleDescriptor, typeParameterTable: TypeParameterTable): KotlinType {
     val classifier = classifier.let { classifier ->
         when (classifier) {
-            // TODO: array type has more than just name
             is KmClassifier.Class -> module.findClass(classifier.name) ?: TODO(classifier.name)
             is KmClassifier.TypeParameter -> typeParameterTable.get(classifier.id)
             is KmClassifier.TypeAlias -> TODO()

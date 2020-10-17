@@ -1,9 +1,11 @@
 package org.jetbrains.kotlin.builtins
 
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.KotlinType
+import kotlin.reflect.jvm.internal.KClassImpl
 
 internal object StandardNames {
     val BUILT_INS_PACKAGE_FQ_NAME = FqName("kotlin")
@@ -53,5 +55,7 @@ internal object KotlinBuiltIns {
 }
 
 internal object KotlinBuiltInsImpl {
-    val anyType: KotlinType = TODO()
+    // TODO: simplify call sites
+    val anyType: KotlinType = KotlinType((Any::class as KClassImpl).descriptor, emptyList(), false, Annotations.EMPTY)
+    val anyNType: KotlinType = KotlinType((Any::class as KClassImpl).descriptor, emptyList(), true, Annotations.EMPTY)
 }

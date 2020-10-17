@@ -34,7 +34,6 @@ import kotlin.reflect.jvm.internal.calls.createAnnotationInstance
 internal val JVM_STATIC = FqName("kotlin.jvm.JvmStatic")
 
 internal fun ClassDescriptor.toJavaClass(): Class<*>? {
-    // TODO
 /*
     val source = source
     return when (source) {
@@ -52,7 +51,7 @@ internal fun ClassDescriptor.toJavaClass(): Class<*>? {
         }
     }
 */
-    return null
+    return kClass.jClass
 }
 
 private fun loadClass(classLoader: ClassLoader, kotlinClassId: ClassId, arrayDimensions: Int = 0): Class<*>? {
