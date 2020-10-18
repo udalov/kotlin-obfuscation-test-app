@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeProjection
 import kotlin.reflect.KVariance
 import kotlin.reflect.jvm.internal.KClassImpl
+import kotlin.reflect.jvm.internal.KDeclarationContainerImpl
 
 internal interface ModuleDescriptor {
     fun findClass(name: ClassName): ClassDescriptor?
@@ -33,6 +34,7 @@ internal interface ReceiverParameterDescriptor : ParameterDescriptor
 internal interface CallableMemberDescriptor : DeclarationDescriptor {
     val module: ModuleDescriptor
     val containingClass: ClassDescriptor?
+    val container: KDeclarationContainerImpl
 
     val dispatchReceiverParameter: ReceiverParameterDescriptor?
     val extensionReceiverParameter: ReceiverParameterDescriptor?
@@ -78,8 +80,13 @@ internal interface ConstructorDescriptor : FunctionDescriptor {
     val constructedClass: ClassDescriptor
 }
 
-internal interface ClassifierDescriptor : DeclarationDescriptor
+internal interface ClassifierDescriptor : DeclarationDescriptor {
+    override fun equals(other: Any?): Boolean
+    override fun hashCode(): Int
+}
+
 internal interface TypeParameterDescriptor : ClassifierDescriptor {
+    val containingDeclaration: DeclarationDescriptor
     val upperBounds: List<KotlinType>
     val variance: KVariance
     val isReified: Boolean

@@ -24,6 +24,7 @@ import kotlin.reflect.javaType as stdlibJavaType
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.functions
 import kotlin.reflect.full.memberProperties
+import kotlin.reflect.jvm.internal.KPackageImpl
 import kotlin.reflect.jvm.internal.KTypeImpl
 import kotlin.reflect.jvm.internal.asKCallableImpl
 import kotlin.reflect.jvm.internal.asKPropertyImpl
@@ -101,7 +102,10 @@ val Field.kotlinProperty: KProperty<*>?
 
 
 private fun Member.getKPackage(): KDeclarationContainer? =
-    TODO()
+    when (declaringClass.getAnnotation(Metadata::class.java)?.kind) {
+        2, 4, 5 -> KPackageImpl(declaringClass)
+        else -> null
+    }
 
 /**
  * Returns a [KFunction] instance corresponding to the given Java [Method] instance,

@@ -16,6 +16,8 @@
 
 package kotlin.reflect.jvm.internal
 
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import kotlin.jvm.internal.TypeParameterReference
 import kotlin.reflect.KType
@@ -38,39 +40,12 @@ internal class KTypeParameterImpl(
         get() = descriptor.isReified
 
     private val container: KTypeParameterOwnerImpl = container ?: run {
-        /*
         when (val declaration = descriptor.containingDeclaration) {
-            is ClassDescriptor -> {
-                declaration.toKClassImpl()
-            }
-            is CallableMemberDescriptor -> {
-                val callableContainerClass = when (val callableContainer = declaration.containingDeclaration) {
-                    is ClassDescriptor -> {
-                        callableContainer.toKClassImpl()
-                    }
-                    else -> {
-                        val deserializedMember = declaration as? DeserializedMemberDescriptor
-                            ?: throw KotlinReflectionInternalError("Non-class callable descriptor must be deserialized: $declaration")
-                        deserializedMember.getContainerClass().kotlin as KClassImpl<*>
-                    }
-                }
-                createKCallable(declaration, callableContainerClass)
-            }
+            is ClassDescriptor -> declaration.kClass
+            is CallableMemberDescriptor -> createKCallable(declaration, declaration.container)
             else -> throw KotlinReflectionInternalError("Unknown type parameter container: $declaration")
         }
-        */
-        TODO()
     }
-
-/*
-    private fun ClassDescriptor.toKClassImpl(): KClassImpl<*> =
-        toJavaClass()?.kotlin as KClassImpl<*>?
-            ?: throw KotlinReflectionInternalError("Type parameter container is not resolved: $containingDeclaration")
-
-    private fun DeserializedMemberDescriptor.getContainerClass(): Class<*> =
-        containerSource.safeAs<JvmPackagePartSource>()?.knownJvmBinaryClass.safeAs<ReflectKotlinClass>()?.klass
-            ?: throw KotlinReflectionInternalError("Container of deserialized member is not resolved: $this")
-*/
 
     override fun equals(other: Any?) =
         other is KTypeParameterImpl && container == other.container && name == other.name

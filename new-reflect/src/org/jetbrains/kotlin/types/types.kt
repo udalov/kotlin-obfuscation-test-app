@@ -50,7 +50,16 @@ internal class TypeProjection(
     val type: KotlinType,
     val isStarProjection: Boolean,
     val projectionKind: KVariance
-)
+) {
+    override fun equals(other: Any?): Boolean =
+        other is TypeProjection &&
+            other.type == type &&
+            other.isStarProjection == isStarProjection &&
+            other.projectionKind == projectionKind
+
+    override fun hashCode(): Int =
+        (type.hashCode() * 31 + isStarProjection.hashCode()) * 31 + projectionKind.hashCode()
+}
 
 internal fun KotlinType.isNullableType(): Boolean =
     // TODO: TypeUtils.isNullableType

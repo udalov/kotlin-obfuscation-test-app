@@ -57,7 +57,7 @@ internal class ClassDescriptorImpl internal constructor(
     // TODO: cache descriptor instances
 
     internal val typeParameterTable: TypeParameterTable =
-        klass.typeParameters.toTypeParameters(module, containingClass?.typeParameterTable)
+        klass.typeParameters.toTypeParameters(this, module, containingClass?.typeParameterTable)
 
     override val declaredTypeParameters: List<TypeParameterDescriptorImpl>
         get() = typeParameterTable.typeParameters
@@ -78,7 +78,7 @@ internal class ClassDescriptorImpl internal constructor(
             klass.properties.map { PropertyDescriptorImpl(it, module, this, kClass) }.let { realProperties ->
                 realProperties + addPropertyFakeOverrides(this, realProperties)
             },
-            klass.functions.map { FunctionDescriptorImpl(it, module, this) }.let { realFunctions ->
+            klass.functions.map { FunctionDescriptorImpl(it, module, this, kClass) }.let { realFunctions ->
                 realFunctions + addFunctionFakeOverrides(this, realFunctions)
             }
         ) // TODO: fake overrides should be cached
@@ -89,12 +89,22 @@ internal class ClassDescriptorImpl internal constructor(
         val it = klass.localDelegatedProperties.getOrNull(index) ?: return null
         return PropertyDescriptorImpl(it, module, null, kClass)
     }
+
+    override fun equals(other: Any?): Boolean =
+        other is ClassDescriptor && classId == other.classId
+
+    override fun hashCode(): Int =
+        classId.hashCode()
 }
 
-private fun List<KmTypeParameter>.toTypeParameters(module: ModuleDescriptor, parent: TypeParameterTable?): TypeParameterTable {
+private fun List<KmTypeParameter>.toTypeParameters(
+    container: DeclarationDescriptor,
+    module: ModuleDescriptor,
+    parentTable: TypeParameterTable?
+): TypeParameterTable {
     val list = ArrayList<TypeParameterDescriptorImpl>(size)
-    return TypeParameterTable(list, parent).also { table ->
-        mapTo(list) { TypeParameterDescriptorImpl(it, module, table) }
+    return TypeParameterTable(list, parentTable).also { table ->
+        mapTo(list) { TypeParameterDescriptorImpl(it, module, container, table) }
     }
 }
 
@@ -106,7 +116,7 @@ internal class FileDescriptorImpl(
     override val scope: MemberScope
         get() = MemberScope(
             file.properties.map { PropertyDescriptorImpl(it, module, null, kPackage) },
-            file.functions.map { FunctionDescriptorImpl(it, module, null) }
+            file.functions.map { FunctionDescriptorImpl(it, module, null, kPackage) }
         )
 
     fun getLocalProperty(index: Int): PropertyDescriptorImpl? {
@@ -147,7 +157,8 @@ abstract class AbstractFunctionDescriptor : AbstractCallableMemberDescriptor(), 
 internal class FunctionDescriptorImpl(
     val function: KmFunction,
     override val module: ModuleDescriptor,
-    override val containingClass: ClassDescriptorImpl?
+    override val containingClass: ClassDescriptorImpl?,
+    override val container: KDeclarationContainerImpl,
 ) : AbstractFunctionDescriptor() {
     override val name: Name
         get() = function.name
@@ -155,7 +166,7 @@ internal class FunctionDescriptorImpl(
         get() = Annotations.EMPTY // TODO
 
     override val typeParameterTable: TypeParameterTable =
-        function.typeParameters.toTypeParameters(module, containingClass?.typeParameterTable)
+        function.typeParameters.toTypeParameters(this, module, containingClass?.typeParameterTable)
 
     override val dispatchReceiverParameter: ReceiverParameterDescriptor?
         get() = containingClass?.thisAsReceiverParameter // TODO
@@ -190,8 +201,11 @@ internal class ConstructorDescriptorImpl(
     override val annotations: Annotations
         get() = Annotations.EMPTY // TODO
 
+    override val container: KDeclarationContainerImpl
+        get() = containingClass.kClass
+
     override val typeParameterTable: TypeParameterTable =
-        emptyList<KmTypeParameter>().toTypeParameters(module, containingClass.typeParameterTable)
+        emptyList<KmTypeParameter>().toTypeParameters(this, module, containingClass.typeParameterTable)
 
     override val dispatchReceiverParameter: ReceiverParameterDescriptor?
         get() = if (containingClass.isInner) containingClass.containingClass!!.thisAsReceiverParameter else null
@@ -223,7 +237,7 @@ internal class PropertyDescriptorImpl(
     val property: KmProperty,
     override val module: ModuleDescriptor,
     override val containingClass: ClassDescriptorImpl?,
-    val container: KDeclarationContainerImpl
+    override val container: KDeclarationContainerImpl,
 ) : AbstractCallableMemberDescriptor(), PropertyDescriptor {
     override val name: Name
         get() = property.name
@@ -231,7 +245,7 @@ internal class PropertyDescriptorImpl(
         get() = Annotations.EMPTY // TODO
 
     override val typeParameterTable: TypeParameterTable =
-        property.typeParameters.toTypeParameters(module, containingClass?.typeParameterTable)
+        property.typeParameters.toTypeParameters(this, module, containingClass?.typeParameterTable)
 
     override val dispatchReceiverParameter: ReceiverParameterDescriptor?
         get() = containingClass?.thisAsReceiverParameter // TODO
@@ -278,6 +292,8 @@ internal class PropertyGetterDescriptorImpl(
         get() = property.module
     override val containingClass: ClassDescriptorImpl?
         get() = property.containingClass
+    override val container: KDeclarationContainerImpl
+        get() = property.container
 
     override val typeParameterTable: TypeParameterTable
         get() = property.typeParameterTable
@@ -315,6 +331,8 @@ internal class PropertySetterDescriptorImpl(
         get() = property.module
     override val containingClass: ClassDescriptorImpl?
         get() = property.containingClass
+    override val container: KDeclarationContainerImpl
+        get() = property.container
 
     override val typeParameterTable: TypeParameterTable
         get() = property.typeParameterTable
@@ -343,6 +361,7 @@ internal class PropertySetterDescriptorImpl(
 internal class TypeParameterDescriptorImpl(
     private val typeParameter: KmTypeParameter,
     private val module: ModuleDescriptor,
+    override val containingDeclaration: DeclarationDescriptor,
     private val typeParameterTable: TypeParameterTable
 ) : TypeParameterDescriptor {
     internal val id: Int get() = typeParameter.id
@@ -360,6 +379,12 @@ internal class TypeParameterDescriptorImpl(
         get() = typeParameter.variance.toVariance()
     override val isReified: Boolean
         get() = Flag.TypeParameter.IS_REIFIED(typeParameter.flags)
+
+    override fun equals(other: Any?): Boolean =
+        other is TypeParameterDescriptor && name == other.name && containingDeclaration == other.containingDeclaration
+
+    override fun hashCode(): Int =
+        name.hashCode() * 31 + containingDeclaration.hashCode()
 }
 
 internal class ValueParameterDescriptorImpl(

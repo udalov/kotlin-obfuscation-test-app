@@ -3,6 +3,7 @@ package org.jetbrains.kotlin.descriptors
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.KotlinType
+import kotlin.reflect.jvm.internal.KDeclarationContainerImpl
 
 internal fun <D : CallableMemberDescriptor> overrides(derived: D, base: D): Boolean {
     require(derived.name == base.name) { "Names should be equal: $derived, $base" }
@@ -97,6 +98,9 @@ internal abstract class FakeOverrideCallableMemberDescriptor(
         get() = overridden.first().visibility // TODO
     override val annotations: Annotations
         get() = overridden.first().annotations // TODO?
+
+    override val container: KDeclarationContainerImpl
+        get() = containingClass.kClass
 
     override val dispatchReceiverParameter: ReceiverParameterDescriptor
         get() = containingClass.thisAsReceiverParameter
