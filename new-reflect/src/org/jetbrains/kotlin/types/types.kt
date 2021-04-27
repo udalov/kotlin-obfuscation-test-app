@@ -15,12 +15,25 @@ internal class KotlinType(
 ) : Annotated {
     fun render(): String = buildString {
         when (descriptor) {
-            is ClassDescriptor -> append(descriptor.classId.asSingleFqName().asString())
+            is ClassDescriptor -> renderClassType(descriptor, arguments, 0)
             is TypeParameterDescriptor -> append(descriptor.name)
             else -> TODO(descriptor.toString())
         }
-        if (arguments.isNotEmpty()) {
-            arguments.joinTo(this, prefix = "<", postfix = ">") {
+        if (isMarkedNullable) {
+            append("?")
+        }
+    }
+
+    private fun Appendable.renderClassType(descriptor: ClassDescriptor, arguments: List<TypeProjection>, start: Int) {
+        val typeParameters = descriptor.declaredTypeParameters.size
+        if (descriptor.isInner) {
+            renderClassType(descriptor.containingClass!!, arguments, start + typeParameters)
+            append(".").append(descriptor.name)
+        } else {
+            append(descriptor.classId.asSingleFqName().asString())
+        }
+        if (typeParameters > 0) {
+            arguments.subList(start, start + typeParameters).joinTo(this, prefix = "<", postfix = ">") {
                 if (it.isStarProjection) "*"
                 else when (it.projectionKind) {
                     KVariance.INVARIANT -> it.type.render()
@@ -28,9 +41,6 @@ internal class KotlinType(
                     KVariance.OUT -> "out " + it.type.render()
                 }
             }
-        }
-        if (isMarkedNullable) {
-            append("?")
         }
     }
 

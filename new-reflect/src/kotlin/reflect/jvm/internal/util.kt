@@ -95,21 +95,9 @@ internal fun DescriptorVisibility.toKVisibility(): KVisibility? =
         DescriptorVisibility.PRIVATE, DescriptorVisibility.PRIVATE_TO_THIS -> KVisibility.PRIVATE
     }
 
-internal fun Annotated.computeAnnotations(): List<Annotation> =
-    annotations.mapNotNull {
-        // TODO
-        /*
-        val source = it.source
-        when (source) {
-            is ReflectAnnotationSource -> source.annotation
-            is RuntimeSourceElementFactory.RuntimeSourceElement -> (source.javaElement as? ReflectJavaAnnotation)?.annotation
-            else -> it.toAnnotationInstance()
-        }
-        */
-        null
-    }
+internal fun Annotated.computeAnnotations(): List<Annotation> = annotations.getAll()
 
-private fun AnnotationDescriptor.toAnnotationInstance(): Annotation? {
+internal fun AnnotationDescriptor.toAnnotationInstance(): Annotation? {
     @Suppress("UNCHECKED_CAST")
     val annotationClass = annotationClass.toJavaClass() as? Class<out Annotation> ?: return null
 

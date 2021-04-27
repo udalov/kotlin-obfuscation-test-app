@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.misc.safeClassLoader
 import org.jetbrains.kotlin.misc.tryLoadClass
 import org.jetbrains.kotlin.misc.wrapperByPrimitive
 import org.jetbrains.kotlin.name.Name
+import java.lang.reflect.AnnotatedElement
 import java.lang.reflect.Constructor
 import java.lang.reflect.Method
 import kotlin.jvm.internal.ClassBasedDeclarationContainer
@@ -214,6 +215,9 @@ internal abstract class KDeclarationContainerImpl : ClassBasedDeclarationContain
         jClass.tryGetConstructor(arrayListOf<Class<*>>().also { parameterTypes ->
             addParametersAndMasks(parameterTypes, desc, true)
         })
+
+    fun findMethodOrConstructorBySignature(name: String, desc: String): AnnotatedElement? =
+        if (name == "<init>") findConstructorBySignature(desc) else findMethodBySignature(name, desc)
 
     private fun addParametersAndMasks(result: MutableList<Class<*>>, desc: String, isConstructor: Boolean) {
         val valueParameters = loadParameterTypes(desc)

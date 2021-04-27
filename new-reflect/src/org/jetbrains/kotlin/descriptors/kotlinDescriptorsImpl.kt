@@ -1,9 +1,11 @@
 package org.jetbrains.kotlin.descriptors
 
 import kotlinx.metadata.*
-import kotlinx.metadata.jvm.localDelegatedProperties
+import kotlinx.metadata.jvm.*
 import org.jetbrains.kotlin.builtins.KotlinBuiltInsImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
+import org.jetbrains.kotlin.descriptors.annotations.JvmAnnotations
+import org.jetbrains.kotlin.descriptors.annotations.SerializedAnnotations
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.KotlinType
@@ -27,7 +29,7 @@ internal class ClassDescriptorImpl internal constructor(
         get() = klass.flags.toVisibility()
 
     override val annotations: Annotations
-        get() = Annotations.EMPTY // TODO
+        get() = JvmAnnotations(kClass.jClass.declaredAnnotations.filterNot { it.annotationClass.java == Metadata::class.java })
 
     override val isInterface: Boolean
         get() = Flag.Class.IS_INTERFACE(klass.flags)
@@ -130,6 +132,8 @@ abstract class AbstractCallableMemberDescriptor : CallableMemberDescriptor {
 
     internal abstract val typeParameterTable: TypeParameterTable
 
+    abstract val methodForAnnotations: JvmMethodSignature?
+
     override val visibility: DescriptorVisibility?
         get() = flags.toVisibility()
 
@@ -141,6 +145,15 @@ abstract class AbstractCallableMemberDescriptor : CallableMemberDescriptor {
         get() = Flag.Common.IS_ABSTRACT(flags)
     override val isExternal: Boolean
         get() = Flag.Function.IS_EXTERNAL(flags)
+
+    override val annotations: Annotations
+        get() {
+            val signature = methodForAnnotations ?: return Annotations.EMPTY
+            return JvmAnnotations(
+                container.findMethodOrConstructorBySignature(signature.name, signature.desc)
+                    ?: throw KotlinReflectionInternalError("Method $signature not found in $container")
+            )
+        }
 }
 
 abstract class AbstractFunctionDescriptor : AbstractCallableMemberDescriptor(), FunctionDescriptor {
@@ -162,8 +175,8 @@ internal class FunctionDescriptorImpl(
 ) : AbstractFunctionDescriptor() {
     override val name: Name
         get() = function.name
-    override val annotations: Annotations
-        get() = Annotations.EMPTY // TODO
+    override val methodForAnnotations: JvmMethodSignature
+        get() = function.signature ?: error("Function $name in $container has no signature")
 
     override val typeParameterTable: TypeParameterTable =
         function.typeParameters.toTypeParameters(this, module, containingClass?.typeParameterTable)
@@ -175,7 +188,8 @@ internal class FunctionDescriptorImpl(
             ReceiverParameterDescriptorImpl(it.toKotlinType(module, typeParameterTable))
         }
     override val valueParameters: List<ValueParameterDescriptor>
-        get() = function.valueParameters.map { ValueParameterDescriptorImpl(it, this) }
+        // TODO: make index +1 for extensions and ensure there's a test
+        get() = function.valueParameters.mapIndexed { index, parameter -> ValueParameterDescriptorImpl(parameter, this, index) }
     override val typeParameters: List<TypeParameterDescriptorImpl>
         get() = typeParameterTable.typeParameters
     override val returnType: KotlinType
@@ -198,8 +212,8 @@ internal class ConstructorDescriptorImpl(
 ) : AbstractFunctionDescriptor(), ConstructorDescriptor {
     override val name: Name
         get() = "<init>"
-    override val annotations: Annotations
-        get() = Annotations.EMPTY // TODO
+    override val methodForAnnotations: JvmMethodSignature
+        get() = constructor.signature ?: error("Constructor in $container has no signature")
 
     override val container: KDeclarationContainerImpl
         get() = containingClass.kClass
@@ -212,7 +226,8 @@ internal class ConstructorDescriptorImpl(
     override val extensionReceiverParameter: ReceiverParameterDescriptor?
         get() = null
     override val valueParameters: List<ValueParameterDescriptor>
-        get() = constructor.valueParameters.map { ValueParameterDescriptorImpl(it, this) }
+        // TODO: check annotations on parameters of inner class constructors
+        get() = constructor.valueParameters.mapIndexed { index, parameter -> ValueParameterDescriptorImpl(parameter, this, index) }
     override val typeParameters: List<TypeParameterDescriptor>
         get() = emptyList()
     override val returnType: KotlinType
@@ -241,8 +256,8 @@ internal class PropertyDescriptorImpl(
 ) : AbstractCallableMemberDescriptor(), PropertyDescriptor {
     override val name: Name
         get() = property.name
-    override val annotations: Annotations
-        get() = Annotations.EMPTY // TODO
+    override val methodForAnnotations: JvmMethodSignature?
+        get() = property.syntheticMethodForAnnotations
 
     override val typeParameterTable: TypeParameterTable =
         property.typeParameters.toTypeParameters(this, module, containingClass?.typeParameterTable)
@@ -285,8 +300,8 @@ internal class PropertyGetterDescriptorImpl(
 ) : AbstractFunctionDescriptor(), PropertyGetterDescriptor {
     override val name: Name
         get() = TODO() // TODO: shouldn't be called
-    override val annotations: Annotations
-        get() = Annotations.EMPTY // TODO
+    override val methodForAnnotations: JvmMethodSignature?
+        get() = property.property.getterSignature
 
     override val module: ModuleDescriptor
         get() = property.module
@@ -324,8 +339,8 @@ internal class PropertySetterDescriptorImpl(
 ) : AbstractFunctionDescriptor(), PropertySetterDescriptor {
     override val name: Name
         get() = TODO() // TODO: shouldn't be called
-    override val annotations: Annotations
-        get() = Annotations.EMPTY // TODO
+    override val methodForAnnotations: JvmMethodSignature?
+        get() = property.property.setterSignature
 
     override val module: ModuleDescriptor
         get() = property.module
@@ -389,12 +404,18 @@ internal class TypeParameterDescriptorImpl(
 
 internal class ValueParameterDescriptorImpl(
     private val valueParameter: KmValueParameter,
-    override val containingDeclaration: AbstractCallableMemberDescriptor
+    override val containingDeclaration: AbstractFunctionDescriptor,
+    private val index: Int,
 ) : ValueParameterDescriptor {
     override val name: Name
         get() = valueParameter.name
     override val annotations: Annotations
-        get() = TODO()
+        get() {
+            val callable = containingDeclaration.methodForAnnotations?.let { (name, desc) ->
+                containingDeclaration.container.findMethodBySignature(name, desc)
+            } ?: return Annotations.EMPTY
+            return JvmAnnotations(callable.parameterAnnotations[index].toList())
+        }
 
     override val type: KotlinType
         // TODO: fix nullability in kotlinx-metadata
@@ -409,7 +430,12 @@ internal class PropertySetterParameterDescriptor(private val setter: PropertySet
     override val name: Name
         get() = "<set-?>"
     override val annotations: Annotations
-        get() = TODO()
+        get() {
+            val setter = setter.methodForAnnotations?.let { (name, desc) ->
+                setter.container.findMethodBySignature(name, desc)
+            } ?: return Annotations.EMPTY
+            return JvmAnnotations(setter.parameterAnnotations.single().toList())
+        }
 
     override val containingDeclaration: CallableMemberDescriptor
         get() = setter
@@ -432,15 +458,15 @@ private fun KmType.toKotlinType(module: ModuleDescriptor, typeParameterTable: Ty
     }
     return KotlinType(
         classifier,
-        arguments.map { (variance, type) ->
+        generateSequence(this, KmType::outerType).flatMap(KmType::arguments).map { (variance, type) ->
             TypeProjection(
                 type?.toKotlinType(module, typeParameterTable) ?: KotlinBuiltInsImpl.anyType,
                 variance == null,
                 variance?.toVariance() ?: KVariance.OUT /* TODO: verify */
             )
-        },
+        }.toList(),
         Flag.Type.IS_NULLABLE(flags),
-        Annotations.EMPTY // TODO
+        SerializedAnnotations(module, annotations),
     )
 }
 
