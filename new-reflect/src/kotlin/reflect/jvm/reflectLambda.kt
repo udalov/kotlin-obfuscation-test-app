@@ -16,8 +16,15 @@
 
 package kotlin.reflect.jvm
 
+import kotlinx.metadata.jvm.KotlinClassHeader
+import kotlinx.metadata.jvm.KotlinClassMetadata
+import org.jetbrains.kotlin.descriptors.FunctionDescriptorImpl
+import org.jetbrains.kotlin.descriptors.ModuleDescriptorImpl
+import org.jetbrains.kotlin.misc.safeClassLoader
 import kotlin.annotation.AnnotationTarget.*
 import kotlin.reflect.KFunction
+import kotlin.reflect.jvm.internal.EmptyContainerForLocal
+import kotlin.reflect.jvm.internal.KFunctionImpl
 
 /**
  * This is an experimental API. Given a class for a compiled Kotlin lambda or a function expression,
@@ -26,7 +33,16 @@ import kotlin.reflect.KFunction
  */
 @ExperimentalReflectionOnLambdas
 fun <R> Function<R>.reflect(): KFunction<R>? {
-    TODO()
+    val annotation = javaClass.getAnnotation(Metadata::class.java) ?: return null
+    val header = with(annotation) {
+        KotlinClassHeader(kind, metadataVersion, data1, data2, extraString, packageName, extraInt)
+    }
+    val metadata = KotlinClassMetadata.read(header) as? KotlinClassMetadata.SyntheticClass ?: return null
+    val lambda = metadata.toKmLambda() ?: return null
+    val module = ModuleDescriptorImpl(javaClass.safeClassLoader)
+    val descriptor = FunctionDescriptorImpl(lambda.function, module, null, EmptyContainerForLocal)
+    @Suppress("UNCHECKED_CAST")
+    return KFunctionImpl(EmptyContainerForLocal, descriptor) as KFunction<R>
 }
 
 /**

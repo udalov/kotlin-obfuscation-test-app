@@ -147,7 +147,7 @@ internal class KClassImpl<T : Any>(
         @Suppress("UNCHECKED_CAST")
         val objectInstance: T? by ReflectProperties.lazy {
             val descriptor = descriptor
-            if (!descriptor.isObject) return@lazy null
+            if (!descriptor.isNonCompanionObject && !descriptor.isCompanionObject) return@lazy null
 
             val field = if (descriptor.isCompanionObject && !CompanionObjectMapping.isMappedIntrinsicCompanionObject(descriptor)) {
                 jClass.enclosingClass.getDeclaredField(descriptor.name)
@@ -237,7 +237,7 @@ internal class KClassImpl<T : Any>(
     override val constructorDescriptors: Collection<ConstructorDescriptor>
         get() {
             val descriptor = descriptor
-            if (descriptor.isInterface || descriptor.isObject) {
+            if (descriptor.isInterface || descriptor.isNonCompanionObject || descriptor.isCompanionObject) {
                 return emptyList()
             }
             return descriptor.constructors

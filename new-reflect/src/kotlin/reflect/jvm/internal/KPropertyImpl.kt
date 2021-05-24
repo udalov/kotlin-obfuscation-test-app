@@ -9,6 +9,7 @@ import kotlinx.metadata.jvm.syntheticMethodForAnnotations
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.types.isNullableType
+import org.jetbrains.kotlin.misc.DescriptorsJvmAbiUtil
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import kotlin.jvm.internal.CallableReference
@@ -49,8 +50,8 @@ internal abstract class KPropertyImpl<out V> private constructor(
         when (jvmSignature) {
             is KotlinProperty -> {
                 jvmSignature.fieldSignature?.let {
-                    val owner = if (false /* TODO: DescriptorsJvmAbiUtil.isPropertyWithBackingFieldInOuterClass(descriptor) ||
-                        JvmProtoBufUtil.isMovedFromInterfaceCompanion(jvmSignature.proto) */
+                    val owner = if (DescriptorsJvmAbiUtil.isPropertyWithBackingFieldInOuterClass(descriptor)
+                        || descriptor.isMovedFromInterfaceCompanion
                     ) {
                         container.jClass.enclosingClass
                     } else descriptor.containingClass?.kClass?.jClass ?: container.jClass
@@ -194,7 +195,7 @@ private fun KPropertyImpl.Accessor<*, *>.computeCallerForAccessor(isGetter: Bool
     fun isJvmStaticProperty(): Boolean {
         // TODO: find out if there's an easier way
         val descriptor = property.descriptor as? PropertyDescriptorImpl ?: return false
-        if (descriptor.containingClass?.isObject != true) return false
+        if (descriptor.containingClass?.isNonCompanionObject != true) return false
         val annotationsMethodSignature = descriptor.property.syntheticMethodForAnnotations ?: return false
         val kClass = descriptor.container as? KClassImpl<*> ?: return false
         // TODO: this won't fly in case of different extensions, do additional filtering with annotationsMethodSignature.desc

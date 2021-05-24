@@ -67,11 +67,15 @@ internal interface PropertyDescriptor : CallableMemberDescriptor {
     val isConst: Boolean
     val isDelegated: Boolean
 
+    val isMovedFromInterfaceCompanion: Boolean
+
     val getter: PropertyGetterDescriptor?
     val setter: PropertySetterDescriptor?
 }
 
-internal interface PropertyAccessorDescriptor : FunctionDescriptor
+internal interface PropertyAccessorDescriptor : FunctionDescriptor {
+    val property: PropertyDescriptor
+}
 internal interface PropertyGetterDescriptor : PropertyAccessorDescriptor
 internal interface PropertySetterDescriptor : PropertyAccessorDescriptor
 
@@ -103,7 +107,7 @@ internal interface ClassDescriptor : ClassifierDescriptor {
 
     val isInterface: Boolean
     val isAnnotationClass: Boolean
-    val isObject: Boolean
+    val isNonCompanionObject: Boolean
 
     val isFinal: Boolean
     val isOpen: Boolean
@@ -195,14 +199,13 @@ internal fun createDefaultSetter(property: PropertyDescriptor, annotations: Anno
     TODO()
 }
 
-internal fun CallableMemberDescriptor.isGetterOfUnderlyingPropertyOfInlineClass(): Boolean {
-    // TODO
-    return false
-}
+internal fun CallableMemberDescriptor.isGetterOfUnderlyingPropertyOfInlineClass() =
+    this is PropertyGetterDescriptor && property.isUnderlyingPropertyOfInlineClass()
 
 internal fun CallableMemberDescriptor.isUnderlyingPropertyOfInlineClass(): Boolean {
-    // TODO
-    return false
+    if (this !is PropertyDescriptor || extensionReceiverParameter != null) return false
+    val container = containingClass
+    return container is ClassDescriptorImpl && container.klass.inlineClassUnderlyingPropertyName == name
 }
 
 internal val ClassifierDescriptor.parameters: List<TypeParameterDescriptor>

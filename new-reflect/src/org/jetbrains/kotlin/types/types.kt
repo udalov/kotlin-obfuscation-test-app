@@ -72,8 +72,8 @@ internal class TypeProjection(
 }
 
 internal fun KotlinType.isNullableType(): Boolean =
-    // TODO: TypeUtils.isNullableType
-    isMarkedNullable
+    // This needs to be changed once KT-31545 is fixed.
+    isMarkedNullable || (descriptor is TypeParameterDescriptor && descriptor.upperBounds.any { it.isNullableType() })
 
 internal fun KotlinType.isInlineClassType(): Boolean =
     // TODO

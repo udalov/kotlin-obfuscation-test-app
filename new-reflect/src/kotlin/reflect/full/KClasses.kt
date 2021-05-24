@@ -21,12 +21,9 @@ package kotlin.reflect.full
 
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.defaultType
+import org.jetbrains.kotlin.types.TypeSubstitutor
 import kotlin.reflect.*
-import kotlin.reflect.jvm.internal.KCallableImpl
-import kotlin.reflect.jvm.internal.KClassImpl
-import kotlin.reflect.jvm.internal.KFunctionImpl
-import kotlin.reflect.jvm.internal.KTypeImpl
-import kotlin.reflect.jvm.internal.KotlinReflectionInternalError
+import kotlin.reflect.jvm.internal.*
 
 /**
  * Returns the primary constructor of this class, or `null` if this class has no primary constructor.
@@ -188,34 +185,32 @@ val KClass<*>.superclasses: List<KClass<*>>
  */
 @SinceKotlin("1.1")
 val KClass<*>.allSupertypes: Collection<KType>
-    get() =
-/*
-        DFS.dfs(
-            supertypes,
-            DFS.Neighbors { current ->
-                val klass = current.classifier as? KClass<*> ?: throw KotlinReflectionInternalError("Supertype not a class: $current")
-                val supertypes = klass.supertypes
-                val typeArguments = current.arguments
-                if (typeArguments.isEmpty()) supertypes
+    get() {
+        val result = mutableSetOf<KType>()
+
+        fun dfs(current: KType) {
+            if (!result.add(current)) return
+
+            val klass = current.classifier as? KClass<*> ?: throw KotlinReflectionInternalError("Supertype not a class: $current")
+            val supertypes =
+                if (current.arguments.isEmpty()) klass.supertypes
                 else TypeSubstitutor.create((current as KTypeImpl).type).let { substitutor ->
-                    supertypes.map { supertype ->
-                        val substituted = substitutor.substitute((supertype as KTypeImpl).type, Variance.INVARIANT)
-                                          ?: throw KotlinReflectionInternalError("Type substitution failed: $supertype ($current)")
-                        KTypeImpl(substituted)
+                    klass.supertypes.map { supertype ->
+                        KTypeImpl(substitutor.substitute((supertype as KTypeImpl).type))
                     }
                 }
-            },
-            DFS.VisitedWithSet(),
-            object : DFS.NodeHandlerWithListResult<KType, KType>() {
-                override fun beforeChildren(current: KType): Boolean {
-                    result.add(current)
-                    return true
-                }
+
+            for (supertype in supertypes) {
+                dfs(supertype)
             }
-        )
-*/
-        // TODO
-        emptyList()
+        }
+
+        for (supertype in supertypes) {
+            dfs(supertype)
+        }
+        // toList is needed because some tests (e.g. simpleSupertypes) incorrectly assume that allSupertypes returns list.
+        return result.toList()
+    }
 
 /**
  * All superclasses of this class, including indirect ones, in no particular order.
@@ -232,9 +227,14 @@ val KClass<*>.allSuperclasses: Collection<KClass<*>>
  * Returns `true` if `this` class is the same or is a (possibly indirect) subclass of [base], `false` otherwise.
  */
 @SinceKotlin("1.1")
-fun KClass<*>.isSubclassOf(base: KClass<*>): Boolean =
-    // TODO
-        this == base /* || DFS.ifAny(listOf(this), KClass<*>::superclasses) { it == base } */
+fun KClass<*>.isSubclassOf(base: KClass<*>): Boolean {
+    if (this == base) return true
+
+    val visited = HashSet<KClass<*>>()
+    fun dfs(current: KClass<*>): Boolean =
+        visited.add(current) && (current == base || current.superclasses.any(::dfs))
+    return dfs(this)
+}
 
 /**
  * Returns `true` if `this` class is the same or is a (possibly indirect) superclass of [derived], `false` otherwise.

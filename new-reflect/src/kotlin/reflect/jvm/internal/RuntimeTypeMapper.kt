@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.misc.classId
 import org.jetbrains.kotlin.misc.desc
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.sanitizeAsJavaIdentifier
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
 import java.lang.reflect.Method
@@ -84,23 +85,21 @@ internal sealed class JvmPropertySignature {
         }
 
         private fun getManglingSuffix(): String {
-            // TODO
-/*
-            val containingDeclaration = descriptor.containingDeclaration
-            if (descriptor.visibility == Visibilities.INTERNAL && containingDeclaration is DeserializedClassDescriptor) {
-                val classProto = containingDeclaration.classProto
-                val moduleName = classProto.getExtensionOrNull(JvmProtoBuf.classModuleName)?.let(nameResolver::getString)
-                    ?: JvmProtoBufUtil.DEFAULT_MODULE_NAME
-                return "$" + NameUtils.sanitizeAsJavaIdentifier(moduleName)
+            val containingClass = descriptor.containingClass
+            if (descriptor.visibility == DescriptorVisibility.INTERNAL && containingClass is ClassDescriptorImpl) {
+                val moduleName = containingClass.klass.moduleName ?: "main"
+                return "$" + sanitizeAsJavaIdentifier(moduleName)
             }
-            if (descriptor.visibility == Visibilities.PRIVATE && containingDeclaration is PackageFragmentDescriptor) {
+            if (descriptor.visibility == DescriptorVisibility.PRIVATE && containingClass == null) {
+                (descriptor.container as KPackageImpl)
+                // TODO
+/*
                 val packagePartSource = (descriptor as DeserializedPropertyDescriptor).containerSource
                 if (packagePartSource is JvmPackagePartSource && packagePartSource.facadeClassName != null) {
                     return "$" + packagePartSource.simpleName.asString()
                 }
-            }
 */
-
+            }
             return ""
         }
 

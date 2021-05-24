@@ -18,6 +18,8 @@
 package kotlin.reflect.full
 
 import org.jetbrains.kotlin.builtins.KotlinBuiltInsImpl
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.parameters
 import org.jetbrains.kotlin.types.KotlinType
@@ -49,6 +51,9 @@ fun KClassifier.createType(
 ): KType {
     val descriptor = (this as? KClassifierImpl)?.descriptor
                      ?: throw KotlinReflectionInternalError("Cannot create type for an unsupported classifier: $this (${this.javaClass})")
+    if (descriptor.allParametersSize != arguments.size) {
+        throw IllegalArgumentException("Class declares ${descriptor.parameters.size} type parameters, but ${arguments.size} were provided.")
+    }
 
     val kotlinType = KotlinType(descriptor, arguments.map { (variance, type) ->
         // TODO: avoid cast
@@ -90,6 +95,10 @@ private fun createKotlinType(
     }, nullable)
 }
 */
+
+private val ClassifierDescriptor.allParametersSize: Int
+    get() = parameters.size +
+        (if (this is ClassDescriptor && isInner) containingClass!!.allParametersSize else 0)
 
 /**
  * Creates an instance of [KType] with the given classifier, substituting all its type parameters with star projections.

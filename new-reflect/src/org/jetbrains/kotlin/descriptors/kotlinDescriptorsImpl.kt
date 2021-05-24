@@ -11,13 +11,10 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeProjection
 import kotlin.reflect.KVariance
-import kotlin.reflect.jvm.internal.KClassImpl
-import kotlin.reflect.jvm.internal.KDeclarationContainerImpl
-import kotlin.reflect.jvm.internal.KPackageImpl
-import kotlin.reflect.jvm.internal.KotlinReflectionInternalError
+import kotlin.reflect.jvm.internal.*
 
 internal class ClassDescriptorImpl internal constructor(
-    private val klass: KmClass,
+    val klass: KmClass,
     override val module: ModuleDescriptor,
     override val classId: ClassId,
     override val kClass: KClassImpl<*>
@@ -35,7 +32,7 @@ internal class ClassDescriptorImpl internal constructor(
         get() = Flag.Class.IS_INTERFACE(klass.flags)
     override val isAnnotationClass: Boolean
         get() = Flag.Class.IS_ANNOTATION_CLASS(klass.flags)
-    override val isObject: Boolean
+    override val isNonCompanionObject: Boolean
         get() = Flag.Class.IS_OBJECT(klass.flags)
     override val isFinal: Boolean
         get() = Flag.Common.IS_FINAL(klass.flags)
@@ -72,9 +69,9 @@ internal class ClassDescriptorImpl internal constructor(
     override val constructors: List<ConstructorDescriptor>
         get() = klass.constructors.map { ConstructorDescriptorImpl(it, module, this) }
     override val nestedClasses: List<ClassDescriptor>
-        get() = emptyList() // TODO
+        get() = klass.nestedClasses.mapNotNull { module.findClass(classId.createNestedClassId(it).asClassName()) }
     override val sealedSubclasses: List<ClassDescriptor>
-        get() = emptyList() // TODO
+        get() = klass.sealedSubclasses.mapNotNull(module::findClass)
     override val memberScope: MemberScope
         get() = MemberScope(
             klass.properties.map { PropertyDescriptorImpl(it, module, this, kClass) }.let { realProperties ->
@@ -165,6 +162,10 @@ abstract class AbstractFunctionDescriptor : AbstractCallableMemberDescriptor(), 
         get() = Flag.Function.IS_INFIX(flags)
     override val isSuspend: Boolean
         get() = Flag.Function.IS_SUSPEND(flags)
+
+    override fun render(): String = ReflectionObjectRenderer.renderFunction(this)
+
+    override fun toString(): String = render()
 }
 
 internal class FunctionDescriptorImpl(
@@ -198,8 +199,6 @@ internal class FunctionDescriptorImpl(
         get() = true // TODO
 
     override fun hasSynthesizedParameterNames(): Boolean = false
-
-    override fun render(): String = TODO()
 
     override val flags: Flags
         get() = function.flags
@@ -236,8 +235,6 @@ internal class ConstructorDescriptorImpl(
         get() = true
 
     override fun hasSynthesizedParameterNames(): Boolean = false
-
-    override fun render(): String = TODO()
 
     override val constructedClass: ClassDescriptor
         get() = containingClass
@@ -277,8 +274,6 @@ internal class PropertyDescriptorImpl(
 
     override fun hasSynthesizedParameterNames(): Boolean = false
 
-    override fun render(): String = TODO()
-
     override val isVar: Boolean
         get() = Flag.Property.IS_VAR(flags)
     override val isLateInit: Boolean
@@ -293,10 +288,17 @@ internal class PropertyDescriptorImpl(
         if (Flag.Property.HAS_SETTER(flags)) PropertySetterDescriptorImpl(this) else null
     override val flags: Flags
         get() = property.flags
+
+    override val isMovedFromInterfaceCompanion: Boolean
+        get() = JvmFlag.Property.IS_MOVED_FROM_INTERFACE_COMPANION(property.jvmFlags)
+
+    override fun render(): String = ReflectionObjectRenderer.renderProperty(this)
+
+    override fun toString(): String = render()
 }
 
 internal class PropertyGetterDescriptorImpl(
-    val property: PropertyDescriptorImpl
+    override val property: PropertyDescriptorImpl
 ) : AbstractFunctionDescriptor(), PropertyGetterDescriptor {
     override val name: Name
         get() = TODO() // TODO: shouldn't be called
@@ -328,14 +330,12 @@ internal class PropertyGetterDescriptorImpl(
 
     override fun hasSynthesizedParameterNames(): Boolean = false
 
-    override fun render(): String = TODO()
-
     override val flags: Flags
         get() = property.property.getterFlags
 }
 
 internal class PropertySetterDescriptorImpl(
-    val property: PropertyDescriptorImpl
+    override val property: PropertyDescriptorImpl
 ) : AbstractFunctionDescriptor(), PropertySetterDescriptor {
     override val name: Name
         get() = TODO() // TODO: shouldn't be called
@@ -357,7 +357,7 @@ internal class PropertySetterDescriptorImpl(
     override val extensionReceiverParameter: ReceiverParameterDescriptor?
         get() = property.extensionReceiverParameter
     override val valueParameters: List<ValueParameterDescriptor> =
-        listOf(PropertySetterParameterDescriptor(this))
+        listOf(PropertySetterParameterDescriptor(property.property.setterParameter, this))
     override val typeParameters: List<TypeParameterDescriptor>
         get() = property.typeParameters
     override val returnType: KotlinType
@@ -366,8 +366,6 @@ internal class PropertySetterDescriptorImpl(
         get() = property.isReal
 
     override fun hasSynthesizedParameterNames(): Boolean = false
-
-    override fun render(): String = TODO()
 
     override val flags: Flags
         get() = property.property.setterFlags
@@ -426,9 +424,12 @@ internal class ValueParameterDescriptorImpl(
         get() = valueParameter.varargElementType?.toKotlinType(containingDeclaration.module, containingDeclaration.typeParameterTable)
 }
 
-internal class PropertySetterParameterDescriptor(private val setter: PropertySetterDescriptorImpl) : ValueParameterDescriptor {
+internal class PropertySetterParameterDescriptor(
+    private val parameter: KmValueParameter?,
+    private val setter: PropertySetterDescriptorImpl,
+) : ValueParameterDescriptor {
     override val name: Name
-        get() = "<set-?>"
+        get() = parameter?.name ?: "<set-?>"
     override val annotations: Annotations
         get() {
             val setter = setter.methodForAnnotations?.let { (name, desc) ->

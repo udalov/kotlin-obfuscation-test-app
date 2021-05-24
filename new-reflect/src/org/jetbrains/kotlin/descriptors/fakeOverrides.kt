@@ -171,6 +171,9 @@ internal class FakeOverridePropertyDescriptor(
     override val isDelegated: Boolean
         get() = false
 
+    override val isMovedFromInterfaceCompanion: Boolean
+        get() = false // TODO?
+
     override val getter: PropertyGetterDescriptor? = FakeOverridePropertyGetterDescriptor(this)
     override val setter: PropertySetterDescriptor? =
         if (isVar) FakeOverridePropertySetterDescriptor(this) else null
@@ -179,7 +182,7 @@ internal class FakeOverridePropertyDescriptor(
 // TODO: find out how to reduce duplication with Property{G,S}etterDescriptorImpl
 
 internal class FakeOverridePropertyGetterDescriptor(
-    property: FakeOverridePropertyDescriptor
+    override val property: FakeOverridePropertyDescriptor
 ) : FakeOverrideCallableMemberDescriptor(
     property.module,
     property.containingClass,
@@ -201,7 +204,7 @@ internal class FakeOverridePropertyGetterDescriptor(
 }
 
 internal class FakeOverridePropertySetterDescriptor(
-    property: FakeOverridePropertyDescriptor
+    override val property: FakeOverridePropertyDescriptor
 ) : FakeOverrideCallableMemberDescriptor(
     property.module,
     property.containingClass,
