@@ -95,7 +95,7 @@ internal class KClassImpl<T : Any>(
                 return ClassDescriptorImpl(kmClass, module, jClass.classId, this@KClassImpl)
             }
 
-            TODO(className)
+            return JavaClassDescriptor(module, jClass.classId, this@KClassImpl)
         }
 
         val annotations: List<Annotation> by ReflectProperties.lazySoft { descriptor.computeAnnotations() }
