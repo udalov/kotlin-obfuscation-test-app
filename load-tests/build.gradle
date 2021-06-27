@@ -1,0 +1,28 @@
+plugins {
+    id "java"
+    id "org.jetbrains.kotlin.jvm"
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api "org.jetbrains.kotlin:kotlin-stdlib"
+    testImplementation "org.jetbrains.kotlin:kotlin-reflect"
+    testImplementation "org.jetbrains.kotlin:kotlin-test"
+    testImplementation "junit:junit:4.12"
+    testImplementation "com.github.tschuchortdev:kotlin-compile-testing:1.4.2"
+}
+
+sourceSets {
+    test {
+        java {
+            srcDir "test"
+        }
+    }
+}
+
+test {
+    setWorkingDir(rootDir)
+}
