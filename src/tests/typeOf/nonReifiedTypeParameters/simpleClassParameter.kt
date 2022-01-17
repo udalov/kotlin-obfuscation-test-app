@@ -1,4 +1,3 @@
-
 package tests.typeOf.nonReifiedTypeParameters.simpleClassParameter
 
 import kotlin.reflect.typeOf

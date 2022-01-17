@@ -1,3 +1,4 @@
+
 package tests.annotations.onTypes.classLiteralWithExpectedType
 
 import kotlin.reflect.KClass

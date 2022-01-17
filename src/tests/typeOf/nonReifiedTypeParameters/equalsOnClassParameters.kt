@@ -1,4 +1,3 @@
-
 package tests.typeOf.nonReifiedTypeParameters.equalsOnClassParameters
 
 import kotlin.reflect.typeOf

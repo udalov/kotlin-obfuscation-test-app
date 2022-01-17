@@ -1,4 +1,4 @@
-package tests.mapping.inlineClassPrimaryVal
+package tests.mapping.inlineClasses.inlineClassPrimaryVal
 
 import kotlin.reflect.jvm.*
 import kotlin.test.assertEquals

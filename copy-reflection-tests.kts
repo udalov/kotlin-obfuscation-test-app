@@ -23,23 +23,29 @@ val ignored = listOf(
     "enclosing/",
     "genericSignature/",
     "noReflectAtRuntime/",
+    "typeOf/mutableCollections_before.kt",
     "typeOf/noReflect/",
 )
 
 val result = mutableListOf<String>()
 
 fun isTestDirective(line: String): Boolean =
-    "TODO: muted automatically" in line ||
-            "TODO: investigate should" in line ||
-            "IGNORE_BACKEND" in line ||
-            "TARGET_BACKEND" in line ||
-            "WITH_RUNTIME" in line ||
-            "WITH_REFLECT" in line ||
-            "KJS_WITH_FULL_RUNTIME" in line ||
-            "FULL_JDK" in line ||
-            "SKIP_JDK6" in line ||
-            "!LANGUAGE" in line ||
-            "!USE_EXPERIMENTAL" in line
+    listOf(
+        "TODO: muted automatically",
+        "TODO: investigate should",
+        "IGNORE_BACKEND",
+        "TARGET_BACKEND",
+        "WASM_MUTE_REASON",
+        "WITH_STDLIB",
+        "WITH_REFLECT",
+        "WITH_COROUTINES",
+        "KJS_WITH_FULL_RUNTIME",
+        "FULL_JDK",
+        "SKIP_JDK6",
+        "!LANGUAGE",
+        "!USE_EXPERIMENTAL",
+        "!OPT_IN",
+    ).any(line::contains)
 
 val PACKAGE_REPLACEMENT_REGEX = "([^A-Za-z0-9.:])test\\.".toRegex()
 

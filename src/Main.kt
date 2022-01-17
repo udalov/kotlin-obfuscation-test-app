@@ -22,6 +22,9 @@ object Main {
         test("annotations.privateAnnotation") { tests.annotations.privateAnnotation.box() }
         test("annotations.propertyAccessors") { tests.annotations.propertyAccessors.box() }
         test("annotations.propertyWithoutBackingField") { tests.annotations.propertyWithoutBackingField.box() }
+        test("annotations.repeatable.jvmRepeatableKotlinAnnotation") { tests.annotations.repeatable.jvmRepeatableKotlinAnnotation.box() }
+        test("annotations.repeatable.kotlinAnnotation") { tests.annotations.repeatable.kotlinAnnotation.box() }
+        test("annotations.repeatable.nonRepeatedAnnotationWithItsContainer") { tests.annotations.repeatable.nonRepeatedAnnotationWithItsContainer.box() }
         test("annotations.retentions") { tests.annotations.retentions.box() }
         test("annotations.setparam") { tests.annotations.setparam.box() }
         test("annotations.simpleClassAnnotation") { tests.annotations.simpleClassAnnotation.box() }
@@ -64,6 +67,7 @@ object Main {
         test("call.inlineClasses.overridingVarOfInlineClass") { tests.call.inlineClasses.overridingVarOfInlineClass.box() }
         test("call.inlineClasses.primaryValOfInlineClass") { tests.call.inlineClasses.primaryValOfInlineClass.box() }
         test("call.inlineClasses.properties") { tests.call.inlineClasses.properties.box() }
+        test("call.inlineClasses.suspendFunction") { tests.call.inlineClasses.suspendFunction.box() }
         test("call.innerClassConstructor") { tests.call.innerClassConstructor.box() }
         test("call.jvmStatic") { tests.call.jvmStatic.box() }
         test("call.jvmStaticInObjectIncorrectReceiver") { tests.call.jvmStaticInObjectIncorrectReceiver.box() }
@@ -109,6 +113,7 @@ object Main {
         test("classLiterals.builtinClassLiterals") { tests.classLiterals.builtinClassLiterals.box() }
         test("classLiterals.genericArrays") { tests.classLiterals.genericArrays.box() }
         test("classLiterals.genericClass") { tests.classLiterals.genericClass.box() }
+        test("classLiterals.lambdaClass") { tests.classLiterals.lambdaClass.box() }
         test("classLiterals.reifiedTypeClassLiteral") { tests.classLiterals.reifiedTypeClassLiteral.box() }
         test("classes.classSimpleName") { tests.classes.classSimpleName.box() }
         test("classes.companionObject") { tests.classes.companionObject.box() }
@@ -171,7 +176,8 @@ object Main {
         test("mapping.fakeOverrides.javaFieldGetterSetter") { tests.mapping.fakeOverrides.javaFieldGetterSetter.box() }
         test("mapping.fakeOverrides.javaMethod") { tests.mapping.fakeOverrides.javaMethod.box() }
         test("mapping.functions") { tests.mapping.functions.box() }
-        test("mapping.inlineClassPrimaryVal") { tests.mapping.inlineClassPrimaryVal.box() }
+        test("mapping.inlineClasses.inlineClassPrimaryVal") { tests.mapping.inlineClasses.inlineClassPrimaryVal.box() }
+        test("mapping.inlineClasses.suspendFunctionWithInlineClassInSignature") { tests.mapping.inlineClasses.suspendFunctionWithInlineClassInSignature.box() }
         test("mapping.inlineReifiedFun") { tests.mapping.inlineReifiedFun.box() }
         test("mapping.interfaceCompanionPropertyWithJvmField") { tests.mapping.interfaceCompanionPropertyWithJvmField.box() }
         test("mapping.jvmStatic.companionObjectFunction") { tests.mapping.jvmStatic.companionObjectFunction.box() }
@@ -222,6 +228,7 @@ object Main {
         test("methodsFromAny.parametersEqualsHashCode") { tests.methodsFromAny.parametersEqualsHashCode.box() }
         test("methodsFromAny.parametersEqualsWithClearCaches") { tests.methodsFromAny.parametersEqualsWithClearCaches.box() }
         test("methodsFromAny.parametersToString") { tests.methodsFromAny.parametersToString.box() }
+        test("methodsFromAny.propertyAccessorEqualsHashCode") { tests.methodsFromAny.propertyAccessorEqualsHashCode.box() }
         test("methodsFromAny.propertyEqualsHashCode") { tests.methodsFromAny.propertyEqualsHashCode.box() }
         test("methodsFromAny.propertyToString") { tests.methodsFromAny.propertyToString.box() }
         test("methodsFromAny.typeEqualsHashCode") { tests.methodsFromAny.typeEqualsHashCode.box() }
@@ -267,6 +274,8 @@ object Main {
         test("properties.getDelegate.kPropertyForDelegatedProperty") { tests.properties.getDelegate.kPropertyForDelegatedProperty.box() }
         test("properties.getDelegate.memberExtensionProperty") { tests.properties.getDelegate.memberExtensionProperty.box() }
         test("properties.getDelegate.memberProperty") { tests.properties.getDelegate.memberProperty.box() }
+        test("properties.getDelegate.method.delegateMethodIsNonOverridable") { tests.properties.getDelegate.method.delegateMethodIsNonOverridable.box() }
+        test("properties.getDelegate.method.delegateToAnother") { tests.properties.getDelegate.method.delegateToAnother.box() }
         test("properties.getDelegate.nameClashClassAndCompanion") { tests.properties.getDelegate.nameClashClassAndCompanion.box() }
         test("properties.getDelegate.noSetAccessibleTrue") { tests.properties.getDelegate.noSetAccessibleTrue.box() }
         test("properties.getDelegate.notDelegatedProperty") { tests.properties.getDelegate.notDelegatedProperty.box() }
@@ -279,6 +288,7 @@ object Main {
         test("properties.jvmField.interfaceCompanion") { tests.properties.jvmField.interfaceCompanion.box() }
         test("properties.jvmField.interfaceCompanionWithAnnotation") { tests.properties.jvmField.interfaceCompanionWithAnnotation.box() }
         test("properties.localDelegated.defaultImpls") { tests.properties.localDelegated.defaultImpls.box() }
+        test("properties.localDelegated.inLambda") { tests.properties.localDelegated.inLambda.box() }
         test("properties.localDelegated.inlineFun") { tests.properties.localDelegated.inlineFun.box() }
         test("properties.localDelegated.localAndNonLocal") { tests.properties.localDelegated.localAndNonLocal.box() }
         test("properties.localDelegated.localDelegatedProperty") { tests.properties.localDelegated.localDelegatedProperty.box() }
@@ -294,15 +304,19 @@ object Main {
         test("properties.protectedClassVar") { tests.properties.protectedClassVar.box() }
         test("properties.publicClassValAccessible") { tests.properties.publicClassValAccessible.box() }
         test("properties.simpleGetProperties") { tests.properties.simpleGetProperties.box() }
+        test("properties.withLocalType") { tests.properties.withLocalType.box() }
         test("supertypes.builtInClassSupertypes") { tests.supertypes.builtInClassSupertypes.box() }
         test("supertypes.genericSubstitution") { tests.supertypes.genericSubstitution.box() }
         test("supertypes.isSubclassOfIsSuperclassOf") { tests.supertypes.isSubclassOfIsSuperclassOf.box() }
         test("supertypes.primitives") { tests.supertypes.primitives.box() }
         test("supertypes.simpleSupertypes") { tests.supertypes.simpleSupertypes.box() }
+        test("typeOf.annotatedType") { tests.typeOf.annotatedType.box() }
         test("typeOf.classes") { tests.typeOf.classes.box() }
         test("typeOf.inlineClasses") { tests.typeOf.inlineClasses.box() }
+        test("typeOf.intersectionType") { tests.typeOf.intersectionType.box() }
         test("typeOf.manyTypeArguments") { tests.typeOf.manyTypeArguments.box() }
         test("typeOf.multipleLayers") { tests.typeOf.multipleLayers.box() }
+        test("typeOf.mutableCollections_after") { tests.typeOf.mutableCollections_after.box() }
         test("typeOf.nonReifiedTypeParameters.defaultUpperBound") { tests.typeOf.nonReifiedTypeParameters.defaultUpperBound.box() }
         test("typeOf.nonReifiedTypeParameters.equalsOnClassParameters") { tests.typeOf.nonReifiedTypeParameters.equalsOnClassParameters.box() }
         test("typeOf.nonReifiedTypeParameters.equalsOnClassParametersWithReflectAPI") { tests.typeOf.nonReifiedTypeParameters.equalsOnClassParametersWithReflectAPI.box() }
@@ -328,6 +342,7 @@ object Main {
         test("types.createType.simpleCreateType") { tests.types.createType.simpleCreateType.box() }
         test("types.createType.typeParameter") { tests.types.createType.typeParameter.box() }
         test("types.createType.wrongNumberOfArguments") { tests.types.createType.wrongNumberOfArguments.box() }
+        test("types.equalsForClassAndTypeParameterWithSameFqName") { tests.types.equalsForClassAndTypeParameterWithSameFqName.box() }
         test("types.innerGenericArguments") { tests.types.innerGenericArguments.box() }
         test("types.jvmErasureOfClass") { tests.types.jvmErasureOfClass.box() }
         test("types.jvmErasureOfTypeParameter") { tests.types.jvmErasureOfTypeParameter.box() }

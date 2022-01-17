@@ -1,6 +1,5 @@
 package tests.lambdaClasses.reflectOnLambdaInSuspend
 
-// WITH_COROUTINES
 // FILE: a.kt
 
 import helpers.*

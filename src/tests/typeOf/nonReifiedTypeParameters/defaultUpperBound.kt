@@ -1,4 +1,3 @@
-
 package tests.typeOf.nonReifiedTypeParameters.defaultUpperBound
 
 import kotlin.reflect.typeOf

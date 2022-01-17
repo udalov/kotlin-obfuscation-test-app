@@ -1,4 +1,3 @@
-
 package tests.typeOf.nonReifiedTypeParameters.typeParameterFlags
 
 import kotlin.reflect.*
